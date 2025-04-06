@@ -98,7 +98,7 @@ export function AppSidebar() {
           <div className="flex items-center space-x-2">
             {/* Replace with your actual user image */}
             <img src="/profile.jpg" alt="Profile" className="h-8 w-8 rounded-full" />
-            <span className="text-sm font-medium">John Doe</span>
+            <span className="text-sm font-medium">Example Person</span>
           </div>
           <Button
             onClick={logoutHandler}
