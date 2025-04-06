@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { ThreeDCard } from "@/components/three-d-card"
 
 const transactions = [
   {
@@ -110,81 +111,83 @@ export default function TransactionsPage() {
           <h1 className="text-3xl font-bold tracking-tight font-sf-pro">Transactions</h1>
           <p className="text-muted-foreground">View and manage your expense transactions.</p>
         </div>
+        <ThreeDCard>
 
-        <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
-          <CardHeader>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <CardTitle>All Transactions</CardTitle>
-                <CardDescription>Showing {filteredTransactions.length} transactions</CardDescription>
-              </div>
-              <Button variant="outline" className="gap-2">
-                <Download className="h-4 w-4" />
-                Export
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-6 flex flex-col gap-4 sm:flex-row">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search transactions..."
-                  className="pl-9"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="Food">Food</SelectItem>
-                  <SelectItem value="Shopping">Shopping</SelectItem>
-                  <SelectItem value="Transport">Transport</SelectItem>
-                  <SelectItem value="Utilities">Utilities</SelectItem>
-                  <SelectItem value="Entertainment">Entertainment</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-4">
-              {filteredTransactions.length > 0 ? (
-                filteredTransactions.map((transaction, index) => (
-                  <motion.div
-                    key={transaction.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2, delay: index * 0.05 }}
-                    className="flex items-center justify-between rounded-lg border border-border/50 p-4 hover:bg-card/80 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-full ${transaction.iconBg}`}>
-                        <transaction.icon className={`h-5 w-5 ${transaction.iconColor}`} />
-                      </div>
-                      <div>
-                        <div className="font-medium">{transaction.name}</div>
-                        <div className="text-xs text-muted-foreground">{transaction.date}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <Badge variant="outline" className="hidden sm:inline-flex text-xs">
-                        {transaction.category}
-                      </Badge>
-                      <div className="text-right font-medium">${Math.abs(transaction.amount).toFixed(2)}</div>
-                    </div>
-                  </motion.div>
-                ))
-              ) : (
-                <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed border-border">
-                  <p className="text-muted-foreground">No transactions found</p>
+          <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
+            <CardHeader>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle>All Transactions</CardTitle>
+                  <CardDescription>Showing {filteredTransactions.length} transactions</CardDescription>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                <Button variant="outline" className="gap-2">
+                  <Download className="h-4 w-4" />
+                  Export
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-6 flex flex-col gap-4 sm:flex-row">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search transactions..."
+                    className="pl-9"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="Food">Food</SelectItem>
+                    <SelectItem value="Shopping">Shopping</SelectItem>
+                    <SelectItem value="Transport">Transport</SelectItem>
+                    <SelectItem value="Utilities">Utilities</SelectItem>
+                    <SelectItem value="Entertainment">Entertainment</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-4">
+                {filteredTransactions.length > 0 ? (
+                  filteredTransactions.map((transaction, index) => (
+                    <motion.div
+                      key={transaction.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2, delay: index * 0.05 }}
+                      className="flex items-center justify-between rounded-lg border border-border/50 p-4 hover:bg-card/80 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`flex h-10 w-10 items-center justify-center rounded-full ${transaction.iconBg}`}>
+                          <transaction.icon className={`h-5 w-5 ${transaction.iconColor}`} />
+                        </div>
+                        <div>
+                          <div className="font-medium">{transaction.name}</div>
+                          <div className="text-xs text-muted-foreground">{transaction.date}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <Badge variant="outline" className="hidden sm:inline-flex text-xs">
+                          {transaction.category}
+                        </Badge>
+                        <div className="text-right font-medium">${Math.abs(transaction.amount).toFixed(2)}</div>
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed border-border">
+                    <p className="text-muted-foreground">No transactions found</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </ThreeDCard>
       </motion.div>
     </div>
   )

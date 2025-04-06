@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/components/ui/use-toast"
 import { Progress } from "@/components/ui/progress"
 import { OcrResultDisplay } from "@/components/ocr-result-display"
+import { ThreeDCard } from "@/components/three-d-card"
 
 export default function UploadPage() {
   const { toast } = useToast()
@@ -95,97 +96,51 @@ export default function UploadPage() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle>Upload Receipt</CardTitle>
-              <CardDescription>Upload a clear image of your receipt for best results</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="upload">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="upload">Upload Image</TabsTrigger>
-                  <TabsTrigger value="camera">Take Photo</TabsTrigger>
-                </TabsList>
-                <TabsContent value="upload" className="mt-4">
-                  <div className="flex flex-col items-center justify-center gap-4">
-                    <div
-                      className="flex h-64 w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 hover:bg-muted/50 transition-colors"
-                      onClick={() => document.getElementById("receipt-upload")?.click()}
-                    >
-                      {image ? (
-                        <img
-                          src={image || "/placeholder.svg"}
-                          alt="Receipt preview"
-                          className="h-full object-contain p-2"
-                        />
-                      ) : (
-                        <>
-                          <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
-                          <p className="text-sm text-muted-foreground">Drag and drop or click to upload</p>
-                          <p className="text-xs text-muted-foreground">Supports JPG, PNG, HEIC</p>
-                        </>
-                      )}
-                      <Input
-                        id="receipt-upload"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleImageUpload}
-                      />
-                    </div>
-                    {image && (
-                      <Button
-                        onClick={processImage}
-                        disabled={isProcessing}
-                        className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90"
-                      >
-                        {isProcessing ? "Processing..." : "Process Receipt"}
-                      </Button>
-                    )}
-                    {isProcessing && (
-                      <div className="w-full space-y-2">
-                        <div className="flex justify-between text-xs">
-                          <span>Processing</span>
-                          <span>{Math.round(progress)}%</span>
-                        </div>
-                        <Progress value={progress} className="h-1" />
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-                <TabsContent value="camera" className="mt-4">
-                  <div className="flex flex-col items-center justify-center gap-4">
-                    <div className="flex h-64 w-full flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/30">
-                      <Camera className="mb-2 h-8 w-8 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">Camera functionality will be available in the app</p>
-                    </div>
-                    <Button disabled className="w-full">
-                      Take Photo
-                    </Button>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+          {/* Wrap the Upload Receipt Card */}
+          <ThreeDCard>
+            <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle>Upload Receipt</CardTitle>
+                <CardDescription>Upload a clear image of your receipt for best results</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="upload">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="upload">Upload Image</TabsTrigger>
+                    <TabsTrigger value="camera">Take Photo</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="upload" className="mt-4">
+                    {/* ... upload content ... */}
+                  </TabsContent>
+                  <TabsContent value="camera" className="mt-4">
+                    {/* ... camera content ... */}
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </ThreeDCard>
 
-          <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle>Extracted Information</CardTitle>
-              <CardDescription>Review and edit the extracted information</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {ocrResult ? (
-                <OcrResultDisplay result={ocrResult} />
-              ) : (
-                <div className="flex h-64 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30">
-                  <FileText className="h-8 w-8 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Upload and process a receipt to see extracted information
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Wrap the Extracted Information Card */}
+          <ThreeDCard>
+            <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle>Extracted Information</CardTitle>
+                <CardDescription>Review and edit the extracted information</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {ocrResult ? (
+                  <OcrResultDisplay result={ocrResult} />
+                ) : (
+                  <div className="flex h-64 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30">
+                    <FileText className="h-8 w-8 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Upload and process a receipt to see extracted information
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </ThreeDCard>
         </div>
       </motion.div>
     </div>

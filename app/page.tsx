@@ -12,6 +12,7 @@ import { ExpenseChart } from "@/components/expense-chart"
 import { RecentTransactions } from "@/components/recent-transactions"
 import { CategoryBreakdown } from "@/components/category-breakdown"
 import { ThreeDCard } from "@/components/three-d-card"
+import { Footer } from "@/components/Footer"
 
 export default function Dashboard() {
   const [progress, setProgress] = useState(0)
@@ -225,6 +226,7 @@ export default function Dashboard() {
           </Card>
         </ThreeDCard>
       </motion.div>
+      <Footer/>
     </div>
   )
 }
