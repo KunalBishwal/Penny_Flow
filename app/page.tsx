@@ -19,7 +19,7 @@ export default function Dashboard() {
   const router = useRouter()
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
 
-  // Check authentication status
+
   useEffect(() => {
   
     const checkAuth = () => {
@@ -31,7 +31,7 @@ export default function Dashboard() {
         setIsAuthenticated(false)
         setTimeout(() => {
           router.push("/login")
-        }, 500)
+        }, 50)
       }
     }
 

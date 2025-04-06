@@ -28,7 +28,7 @@ export function AnimatedBackground() {
     
     const particlesGeometry = new THREE.BufferGeometry()
 
-    const particlesCount = 20000
+    const particlesCount = 15000
 
     const posArray = new Float32Array(particlesCount * 3)
     const colorsArray = new Float32Array(particlesCount * 3)

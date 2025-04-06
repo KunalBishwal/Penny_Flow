@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button"
 export function AppSidebar() {
   const pathname = usePathname()
 
-  // Define your navigation items.
+
   const navItems = [
     {
       title: "Dashboard",
@@ -62,9 +62,8 @@ export function AppSidebar() {
     },
   ]
 
-  // Dummy logout handler; replace with your actual logout logic.
   const logoutHandler = () => {
-    // For example, remove authentication tokens and redirect.
+
     sessionStorage.removeItem("authenticated")
     window.location.href = "/login"
   }
@@ -75,7 +74,7 @@ export function AppSidebar() {
         <div className="flex items-center space-x-2">
           <Receipt className="h-8 w-8 text-primary" />
           <span className="text-xl font-bold font-sf-pro bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
-            ExpenseAI
+            PennyFlow
           </span>
         </div>
       </SidebarHeader>
@@ -93,7 +92,7 @@ export function AppSidebar() {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      {/* Updated Footer: Profile Section with Log Out Button */}
+      
       <SidebarFooter className="p-4">
         <div className="flex flex-col items-center space-y-2">
           <div className="flex items-center space-x-2">

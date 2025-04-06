@@ -16,12 +16,11 @@ const fontSans = FontSans({
 })
 
 export const metadata = {
-  title: "ExpenseAI - Smart Expense Tracking",
+  title: "PennyFlow - Smart Expense Tracking",
   description: "Track your expenses with AI and OCR",
-  generator: 'v0.dev'
 }
 
-// app/layout.tsx
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {

@@ -109,7 +109,7 @@ export default function LoginPage() {
             <div className="flex justify-center items-center mb-2">
               <Receipt className="h-8 w-8 text-primary mr-2" />
               <h1 className="text-3xl font-bold font-sf-pro gradient-text">
-                ExpenseAI
+                PennyFlow
               </h1>
             </div>
             <p className="text-muted-foreground">
