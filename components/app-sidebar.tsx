@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import {
   BarChart3,
   CreditCard,
@@ -12,6 +13,8 @@ import {
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
+import { onAuthStateChanged, signOut } from "firebase/auth"
+import { auth } from "@/lib/firebase"
 
 import {
   Sidebar,
@@ -27,7 +30,14 @@ import { Button } from "@/components/ui/button"
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const [user, setUser] = useState<any>(null)
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u)
+    })
+    return () => unsubscribe()
+  }, [])
 
   const navItems = [
     {
@@ -62,10 +72,14 @@ export function AppSidebar() {
     },
   ]
 
-  const logoutHandler = () => {
-
-    sessionStorage.removeItem("authenticated")
-    window.location.href = "/login"
+  const logoutHandler = async () => {
+    try {
+      await signOut(auth)
+      sessionStorage.removeItem("authenticated")
+      window.location.href = "/login"
+    } catch (error) {
+      console.error("Logout failed", error)
+    }
   }
 
   return (
@@ -78,11 +92,16 @@ export function AppSidebar() {
           </span>
         </div>
       </SidebarHeader>
+
       <SidebarContent>
         <SidebarMenu>
           {navItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={item.title}>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === item.href}
+                tooltip={item.title}
+              >
                 <Link href={item.href}>
                   <item.icon className="h-5 w-5" />
                   <span>{item.title}</span>
@@ -92,23 +111,37 @@ export function AppSidebar() {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      
+
       <SidebarFooter className="p-4">
-        <div className="flex flex-col items-center space-y-2">
-          <div className="flex items-center space-x-2">
-            {/* Replace with your actual user image */}
-            <img src="/profile.jpg" alt="Profile" className="h-8 w-8 rounded-full" />
-            <span className="text-sm font-medium">Example Person</span>
+        {user ? (
+          <div className="flex flex-col items-center space-y-2">
+            <div
+              className="flex items-center space-x-2"
+            >
+              <img
+                src={user.photoURL || "/default-profile.png"}
+                alt="Profile"
+                className="h-8 w-8 rounded-full object-cover"
+              />
+              <span className="text-sm font-medium">
+                {user.displayName || "User"}
+              </span>
+            </div>
+            <Button
+              onClick={logoutHandler}
+              className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Log Out
+            </Button>
           </div>
-          <Button
-            onClick={logoutHandler}
-            className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90"
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Log Out
-          </Button>
-        </div>
+        ) : (
+          <div className="text-center text-sm text-muted-foreground">
+            Not logged in
+          </div>
+        )}
       </SidebarFooter>
+
       <SidebarRail />
     </Sidebar>
   )
