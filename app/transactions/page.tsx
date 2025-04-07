@@ -1,109 +1,113 @@
-//C:\HTML CSS\WEB DEV COURSE H\React\Hackathon\try\try1\expense-tracker\app\transactions
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { Coffee, Download, Fuel, Search, ShoppingBag, Utensils, Zap } from "lucide-react"
+import {
+  Coffee,
+  Download,
+  Fuel,
+  Search,
+  ShoppingBag,
+  Utensils,
+  Zap,
+  Film,
+} from "lucide-react"
+
+import { auth, db } from "@/lib/firebase" // make sure this path is correct
+import { onAuthStateChanged } from "firebase/auth"
+import { collection, getDocs } from "firebase/firestore"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { ThreeDCard } from "@/components/three-d-card"
 
-const transactions = [
-  {
-    id: "t1",
-    name: "Starbucks",
-    category: "Food",
-    amount: -24.5,
-    date: "Today, 10:30 AM",
-    icon: Coffee,
-    iconColor: "text-green-500",
-    iconBg: "bg-green-500/10",
-  },
-  {
-    id: "t2",
-    name: "Amazon",
-    category: "Shopping",
-    amount: -89.99,
-    date: "Yesterday, 2:45 PM",
-    icon: ShoppingBag,
-    iconColor: "text-blue-500",
-    iconBg: "bg-blue-500/10",
-  },
-  {
-    id: "t3",
-    name: "Electric Bill",
-    category: "Utilities",
-    amount: -120.0,
-    date: "Apr 20, 2025",
-    icon: Zap,
-    iconColor: "text-yellow-500",
-    iconBg: "bg-yellow-500/10",
-  },
-  {
-    id: "t4",
-    name: "Gas Station",
-    category: "Transport",
-    amount: -45.75,
-    date: "Apr 18, 2025",
-    icon: Fuel,
-    iconColor: "text-red-500",
-    iconBg: "bg-red-500/10",
-  },
-  {
-    id: "t5",
-    name: "Restaurant",
-    category: "Food",
-    amount: -68.2,
-    date: "Apr 15, 2025",
-    icon: Utensils,
-    iconColor: "text-purple-500",
-    iconBg: "bg-purple-500/10",
-  },
-  {
-    id: "t6",
-    name: "Starbucks",
-    category: "Food",
-    amount: -18.75,
-    date: "Apr 12, 2025",
-    icon: Coffee,
-    iconColor: "text-green-500",
-    iconBg: "bg-green-500/10",
-  },
-  {
-    id: "t7",
-    name: "Grocery Store",
-    category: "Food",
-    amount: -125.4,
-    date: "Apr 10, 2025",
-    icon: ShoppingBag,
-    iconColor: "text-blue-500",
-    iconBg: "bg-blue-500/10",
-  },
-  {
-    id: "t8",
-    name: "Movie Tickets",
-    category: "Entertainment",
-    amount: -32.5,
-    date: "Apr 8, 2025",
-    icon: Utensils,
-    iconColor: "text-purple-500",
-    iconBg: "bg-purple-500/10",
-  },
-]
+const categoryIcons: Record<string, any> = {
+  Food: Utensils,
+  Shopping: ShoppingBag,
+  Transport: Fuel,
+  Utilities: Zap,
+  Entertainment: Film,
+  Coffee: Coffee,
+}
+
+type Transaction = {
+  id: string
+  name: string
+  category: string
+  amount: number
+  date: string
+  icon: any
+  iconColor: string
+  iconBg: string
+}
 
 export default function TransactionsPage() {
+  const [transactions, setTransactions] = useState<Transaction[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) return
+
+      const expensesRef = collection(db, "users", user.uid, "expenses")
+      const snapshot = await getDocs(expensesRef)
+
+      const fetched: Transaction[] = snapshot.docs.map((doc) => {
+        const data = doc.data()
+        const icon = categoryIcons[data.category] || ShoppingBag
+        return {
+          id: doc.id,
+          name: data.name || "Unknown",
+          category: data.category || "Uncategorized",
+          amount: data.amount || 0,
+          date: new Date(data.date).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          }),
+          icon,
+          iconColor: "text-blue-500",
+          iconBg: "bg-blue-500/10",
+        }
+      })
+
+      setTransactions(fetched)
+      setLoading(false)
+    })
+
+    return () => unsubscribe()
+  }, [])
 
   const filteredTransactions = transactions.filter((transaction) => {
     const matchesSearch = transaction.name.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesCategory = categoryFilter === "all" || transaction.category === categoryFilter
     return matchesSearch && matchesCategory
   })
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[300px]">
+        <div className="animate-spin h-8 w-8 border-4 border-muted border-t-transparent rounded-full" />
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto py-6">
@@ -112,8 +116,8 @@ export default function TransactionsPage() {
           <h1 className="text-3xl font-bold tracking-tight font-sf-pro">Transactions</h1>
           <p className="text-muted-foreground">View and manage your expense transactions.</p>
         </div>
-        <ThreeDCard>
 
+        <ThreeDCard>
           <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
             <CardHeader>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -127,6 +131,7 @@ export default function TransactionsPage() {
                 </Button>
               </div>
             </CardHeader>
+
             <CardContent>
               <div className="mb-6 flex flex-col gap-4 sm:flex-row">
                 <div className="relative flex-1">
@@ -138,6 +143,7 @@ export default function TransactionsPage() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
+
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                   <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Category" />
@@ -193,4 +199,3 @@ export default function TransactionsPage() {
     </div>
   )
 }
-

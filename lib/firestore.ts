@@ -10,6 +10,7 @@ import {
   getDoc,
   setDoc,
   serverTimestamp,
+  deleteDoc, // ✅ Added for deletion
 } from "firebase/firestore";
 
 /**
@@ -91,5 +92,17 @@ export async function updateBudget(userId: string, budgetData: { budget: number;
     });
   } catch (error) {
     throw new Error("Failed to update budget: " + (error as Error).message);
+  }
+}
+
+/**
+ * Delete a specific expense by ID for a user.
+ */
+export async function deleteExpense(userId: string, expenseId: string) {
+  try {
+    const expenseRef = doc(db, "users", userId, "expenses", expenseId);
+    await deleteDoc(expenseRef);
+  } catch (error) {
+    throw new Error("Failed to delete expense: " + (error as Error).message);
   }
 }

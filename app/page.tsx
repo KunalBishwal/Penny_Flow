@@ -1,37 +1,47 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { ArrowDown, ArrowUp, CreditCard, DollarSign, Percent, Wallet } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  CreditCard,
+  DollarSign,
+  Percent,
+  Wallet,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { gsap } from "gsap";
 import { useRouter } from "next/navigation";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ExpenseChart } from "@/components/expense-chart";
 import { RecentTransactions } from "@/components/recent-transactions";
 import { CategoryBreakdown } from "@/components/category-breakdown";
 import { ThreeDCard } from "@/components/three-d-card";
 import { Footer } from "@/components/Footer";
-import { getExpenses, getUserSettings } from "@/lib/firestore";
+import { getExpenses, getUserSettings, deleteExpense } from "@/lib/firestore";
 import { getCurrencySymbol } from "@/lib/currency";
 import { auth } from "@/lib/firebase";
 
 export default function Dashboard() {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [userSettings, setUserSettings] = useState<any>(null);
-  const [currency, setCurrency] = useState("USD ($)"); // default fallback
+  const [currency, setCurrency] = useState("USD ($)");
   const headerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [progress, setProgress] = useState(0);
 
-  // Get userId from Firebase Auth (or sessionStorage)
   const user = auth.currentUser;
   const userId = user?.uid || "";
 
   useEffect(() => {
-    // Check if user is authenticated
     const authenticated = sessionStorage.getItem("authenticated");
     if (authenticated === "true" && userId) {
       setIsAuthenticated(true);
@@ -43,7 +53,6 @@ export default function Dashboard() {
     }
   }, [router, userId]);
 
-  // Animate header using GSAP
   useEffect(() => {
     if (!headerRef.current) return;
     gsap.from(headerRef.current, {
@@ -54,7 +63,6 @@ export default function Dashboard() {
     });
   }, []);
 
-  // Fetch data from Firestore when authenticated and userId available
   useEffect(() => {
     async function fetchData() {
       try {
@@ -70,18 +78,28 @@ export default function Dashboard() {
         console.error("Error fetching data:", error);
       }
     }
+
     if (isAuthenticated && userId) {
       fetchData();
     }
   }, [isAuthenticated, userId]);
 
-  // Compute dynamic stats
+  // DELETE EXPENSE HANDLER
+  const handleDeleteExpense = async (expenseId: string) => {
+    try {
+      await deleteExpense(userId, expenseId);
+      setExpenses((prev) => prev.filter((exp) => exp.id !== expenseId));
+    } catch (error) {
+      console.error("Error deleting expense:", error);
+    }
+  };
+
   const totalSpent = expenses.reduce((acc, exp) => acc + (exp.amount || 0), 0);
   const budget = userSettings?.budget || 0;
   const budgetLeft = budget - totalSpent;
   const transactionCount = expenses.length;
-  // Let's assume Budget Status is the percentage of budget used.
-  const budgetStatus = budget > 0 ? Math.min(Math.round((totalSpent / budget) * 100), 100) : 0;
+  const budgetStatus =
+    budget > 0 ? Math.min(Math.round((totalSpent / budget) * 100), 100) : 0;
   const symbol = getCurrencySymbol(currency);
 
   const stats = [
@@ -119,16 +137,18 @@ export default function Dashboard() {
     },
   ];
 
-  if (isAuthenticated === null || isAuthenticated === false) {
-    return null;
-  }
+  if (isAuthenticated === null || isAuthenticated === false) return null;
 
   return (
     <div className="flex flex-col gap-6 p-6">
       <div ref={headerRef} className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight font-sf-pro gradient-text">Dashboard</h1>
-          <p className="text-muted-foreground">Track your expenses and budget at a glance.</p>
+          <h1 className="text-3xl font-bold tracking-tight font-sf-pro gradient-text">
+            Dashboard
+          </h1>
+          <p className="text-muted-foreground">
+            Track your expenses and budget at a glance.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">April 2025</span>
@@ -146,25 +166,27 @@ export default function Dashboard() {
             <ThreeDCard>
               <Card className="border border-border/50 bg-card/50 backdrop-blur-sm h-full">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    {stat.title}
+                  </CardTitle>
                   <stat.icon className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground">{stat.description}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {stat.description}
+                  </p>
                   <div className="mt-2 flex items-center text-xs">
                     {stat.changeType === "increase" ? (
                       <ArrowUp className="mr-1 h-3 w-3 text-green-500" />
-                    ) : stat.changeType === "decrease" ? (
+                    ) : (
                       <ArrowDown className="mr-1 h-3 w-3 text-red-500" />
-                    ) : null}
+                    )}
                     <span
                       className={
                         stat.changeType === "increase"
                           ? "text-green-500"
-                          : stat.changeType === "decrease"
-                          ? "text-red-500"
-                          : "text-muted-foreground"
+                          : "text-red-500"
                       }
                     >
                       {stat.change}
@@ -188,7 +210,9 @@ export default function Dashboard() {
             <Card className="border border-border/50 bg-card/50 backdrop-blur-sm h-full">
               <CardHeader>
                 <CardTitle>Expense Trend</CardTitle>
-                <CardDescription>Your spending over the last 30 days</CardDescription>
+                <CardDescription>
+                  Your spending over the last 30 days
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ExpenseChart expenses={expenses} />
@@ -222,12 +246,18 @@ export default function Dashboard() {
                       className="h-2"
                       style={{
                         background: "rgba(30, 30, 35, 0.5)",
-                        boxShadow: budgetStatus > 80 ? "0 0 10px rgba(239, 68, 68, 0.7)" : "none",
+                        boxShadow:
+                          budgetStatus > 80
+                            ? "0 0 10px rgba(239, 68, 68, 0.7)"
+                            : "none",
                       }}
                     />
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>{symbol}0</span>
-                      <span>{symbol}{budget > 0 ? budget.toFixed(2) : "-"}</span>
+                      <span>
+                        {symbol}
+                        {budget > 0 ? budget.toFixed(2) : "-"}
+                      </span>
                     </div>
                   </div>
                   <CategoryBreakdown expenses={expenses} />
@@ -250,7 +280,10 @@ export default function Dashboard() {
               <CardDescription>Your latest expenses</CardDescription>
             </CardHeader>
             <CardContent>
-              <RecentTransactions expenses={expenses} />
+              <RecentTransactions
+                expenses={expenses}
+                onDelete={handleDeleteExpense}
+              />
             </CardContent>
           </Card>
         </ThreeDCard>
