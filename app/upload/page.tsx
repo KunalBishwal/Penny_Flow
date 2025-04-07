@@ -1,10 +1,8 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import React, { useState } from "react"
 import { motion } from "framer-motion"
-import { Camera, FileText, Upload } from "lucide-react"
+import { Camera, FileText } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,6 +12,8 @@ import { useToast } from "@/components/ui/use-toast"
 import { Progress } from "@/components/ui/progress"
 import { OcrResultDisplay } from "@/components/ocr-result-display"
 import { ThreeDCard } from "@/components/three-d-card"
+
+import Tesseract from "tesseract.js"
 
 export default function UploadPage() {
   const { toast } = useToast()
@@ -41,38 +41,25 @@ export default function UploadPage() {
     setProgress(0)
 
     try {
-      // Create a mock result for demo purposes
-      // This avoids Tesseract.js issues in the preview environment
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setProgress((prev) => {
-          const newProgress = prev + 10
-          if (newProgress >= 100) {
-            clearInterval(progressInterval)
-            return 100
+      const { data } = await Tesseract.recognize(image, "eng", {
+        logger: (m: any) => {
+          if (m.status === "recognizing text") {
+            setProgress(Math.floor(m.progress * 100))
           }
-          return newProgress
-        })
-      }, 200)
-
-      // Mock OCR result
-      const mockResult = {
-        fullText:
-          "RECEIPT\n\nStarbucks Coffee\n123 Main Street\nNew York, NY 10001\n\nDate: 04/05/2025\nTime: 10:30 AM\n\nCappuccino      $4.50\nCroissant       $3.25\nBottled Water   $2.75\n\nSubtotal        $10.50\nTax (8%)        $0.84\nTip             $2.00\n\nTotal           $13.34\n\nThank you for your visit!",
-        extractedInfo: {
-          date: "04/05/2025",
-          amount: "13.34",
-          vendor: "Starbucks Coffee",
         },
+      })
+
+      const extractedInfo = {
+        date: data.text.match(/\d{2}\/\d{2}\/\d{4}/)?.[0] || "Unknown",
+        amount: data.text.match(/\$\d+(\.\d{2})?/)?.[0]?.replace("$", "") || "Unknown",
+        vendor: data.text.split("\n")[0] || "Unknown",
       }
 
-      setOcrResult(mockResult)
+      setOcrResult({ fullText: data.text, extractedInfo })
 
       toast({
         title: "Receipt processed successfully",
-        description: "We've extracted the information from your receipt.",
+        description: "Text successfully extracted using OCR.",
       })
     } catch (error) {
       console.error(error)
@@ -96,7 +83,7 @@ export default function UploadPage() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          {/* Wrap the Upload Receipt Card */}
+          {/* Upload Card */}
           <ThreeDCard>
             <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
               <CardHeader>
@@ -110,17 +97,30 @@ export default function UploadPage() {
                     <TabsTrigger value="camera">Take Photo</TabsTrigger>
                   </TabsList>
                   <TabsContent value="upload" className="mt-4">
-                    {/* ... upload content ... */}
+                    <div className="flex flex-col gap-4">
+                      <Input type="file" accept="image/*" onChange={handleImageUpload} />
+                      {image && (
+                        <img
+                          src={image}
+                          alt="Receipt Preview"
+                          className="w-full max-h-64 object-contain rounded-md border"
+                        />
+                      )}
+                      <Button onClick={processImage} disabled={isProcessing || !image}>
+                        {isProcessing ? "Processing..." : "Extract Text"}
+                      </Button>
+                      {isProcessing && <Progress value={progress} />}
+                    </div>
                   </TabsContent>
                   <TabsContent value="camera" className="mt-4">
-                    {/* ... camera content ... */}
+                    <div className="text-muted-foreground">Camera feature coming soon 📷</div>
                   </TabsContent>
                 </Tabs>
               </CardContent>
             </Card>
           </ThreeDCard>
 
-          {/* Wrap the Extracted Information Card */}
+          {/* Extracted Information Card */}
           <ThreeDCard>
             <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
               <CardHeader>
@@ -146,4 +146,3 @@ export default function UploadPage() {
     </div>
   )
 }
-

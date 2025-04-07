@@ -6,6 +6,7 @@ import { onAuthStateChanged, updateProfile } from "firebase/auth"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage"
+import UserAvatar from "@/components/UserAvatar"
 
 const defaultColors = [
   "#FF6B6B", "#6BCB77", "#4D96FF", "#FFC300", "#A66DD4", "#FF7F50",
@@ -64,7 +65,7 @@ export default function ProfilePage() {
 
   const handleDefaultPic = (color: string) => {
     if (!user) return
-    const avatarFile = getInitialAvatar(user?.displayName || "U", color)
+    const avatarFile = getInitialAvatar(user?.displayName || user?.email || "User", color)
     const reader = new FileReader()
     reader.onloadend = () => {
       setPreview(reader.result as string)
@@ -97,10 +98,11 @@ export default function ProfilePage() {
     <div className="max-w-xl mx-auto p-6">
       <h1 className="text-3xl font-bold mb-4">Your Profile</h1>
       <div className="flex flex-col items-center space-y-4">
-        <img
-          src={preview || "/default-profile.png"}
-          alt="Profile"
-          className="h-24 w-24 rounded-full object-cover"
+
+        <UserAvatar
+          photoURL={preview}
+          displayName={user?.displayName || user?.email || "User"}
+          size={96}
         />
 
         <Input
@@ -120,7 +122,7 @@ export default function ProfilePage() {
               variant="ghost"
             >
               <span className="text-white font-bold text-xl">
-                {(user?.displayName || "U")[0]}
+                {(user?.displayName || user?.email || "U")[0]}
               </span>
             </Button>
           ))}

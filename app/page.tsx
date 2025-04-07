@@ -1,98 +1,126 @@
-"use client"
+"use client";
 
-import { useEffect, useState, useRef } from "react"
-import { ArrowDown, ArrowUp, CreditCard, DollarSign, Percent, Wallet } from "lucide-react"
-import { motion } from "framer-motion"
-import { gsap } from "gsap"
-import { useRouter } from "next/navigation"
+import { useEffect, useState, useRef } from "react";
+import { ArrowDown, ArrowUp, CreditCard, DollarSign, Percent, Wallet } from "lucide-react";
+import { motion } from "framer-motion";
+import { gsap } from "gsap";
+import { useRouter } from "next/navigation";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { ExpenseChart } from "@/components/expense-chart"
-import { RecentTransactions } from "@/components/recent-transactions"
-import { CategoryBreakdown } from "@/components/category-breakdown"
-import { ThreeDCard } from "@/components/three-d-card"
-import { Footer } from "@/components/Footer"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { ExpenseChart } from "@/components/expense-chart";
+import { RecentTransactions } from "@/components/recent-transactions";
+import { CategoryBreakdown } from "@/components/category-breakdown";
+import { ThreeDCard } from "@/components/three-d-card";
+import { Footer } from "@/components/Footer";
+import { getExpenses, getUserSettings } from "@/lib/firestore";
+import { getCurrencySymbol } from "@/lib/currency";
+import { auth } from "@/lib/firebase";
 
 export default function Dashboard() {
-  const [progress, setProgress] = useState(0)
-  const headerRef = useRef<HTMLDivElement>(null)
-  const router = useRouter()
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+  const [expenses, setExpenses] = useState<any[]>([]);
+  const [userSettings, setUserSettings] = useState<any>(null);
+  const [currency, setCurrency] = useState("USD ($)"); // default fallback
+  const headerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [progress, setProgress] = useState(0);
 
+  // Get userId from Firebase Auth (or sessionStorage)
+  const user = auth.currentUser;
+  const userId = user?.uid || "";
 
   useEffect(() => {
-  
-    const checkAuth = () => {
-      const authenticated = sessionStorage.getItem("authenticated")
-      if (authenticated === "true") {
-        setIsAuthenticated(true)
-      } else {
-
-        setIsAuthenticated(false)
-        setTimeout(() => {
-          router.push("/login")
-        }, 50)
-      }
+    // Check if user is authenticated
+    const authenticated = sessionStorage.getItem("authenticated");
+    if (authenticated === "true" && userId) {
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+      setTimeout(() => {
+        router.push("/login");
+      }, 50);
     }
+  }, [router, userId]);
 
-    checkAuth()
-  }, [router])
-
+  // Animate header using GSAP
   useEffect(() => {
-    const timer = setTimeout(() => setProgress(68), 500)
-    return () => clearTimeout(timer)
-  }, [])
-
-  useEffect(() => {
-    if (!headerRef.current) return
-
+    if (!headerRef.current) return;
     gsap.from(headerRef.current, {
       y: -20,
       opacity: 0,
       duration: 0.8,
       ease: "power3.out",
-    })
-  }, [])
+    });
+  }, []);
+
+  // Fetch data from Firestore when authenticated and userId available
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const fetchedExpenses = await getExpenses(userId);
+        setExpenses(fetchedExpenses);
+
+        const settings = await getUserSettings(userId);
+        setUserSettings(settings);
+        if (settings.currency) {
+          setCurrency(settings.currency);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    }
+    if (isAuthenticated && userId) {
+      fetchData();
+    }
+  }, [isAuthenticated, userId]);
+
+  // Compute dynamic stats
+  const totalSpent = expenses.reduce((acc, exp) => acc + (exp.amount || 0), 0);
+  const budget = userSettings?.budget || 0;
+  const budgetLeft = budget - totalSpent;
+  const transactionCount = expenses.length;
+  // Let's assume Budget Status is the percentage of budget used.
+  const budgetStatus = budget > 0 ? Math.min(Math.round((totalSpent / budget) * 100), 100) : 0;
+  const symbol = getCurrencySymbol(currency);
 
   const stats = [
     {
       title: "Total Spent",
-      value: "$2,450",
+      value: `${symbol}${totalSpent.toFixed(2)}`,
       description: "This month",
       icon: DollarSign,
-      change: "+12.5%",
-      changeType: "increase",
+      change: budgetStatus > 100 ? "Over budget" : `${budgetStatus}% used`,
+      changeType: totalSpent <= budget ? "increase" : "decrease",
     },
     {
       title: "Budget Left",
-      value: "$1,150",
-      description: "From $3,600",
+      value: `${symbol}${budgetLeft.toFixed(2)}`,
+      description: "Remaining from monthly budget",
       icon: Wallet,
-      change: "32%",
-      changeType: "neutral",
+      change: budgetLeft > 0 ? "On track" : "Over budget",
+      changeType: budgetLeft > 0 ? "increase" : "decrease",
     },
     {
       title: "Transactions",
-      value: "24",
+      value: `${transactionCount}`,
       description: "This month",
       icon: CreditCard,
-      change: "+3",
+      change: transactionCount > 0 ? `+${transactionCount}` : "0",
       changeType: "increase",
     },
     {
-      title: "Savings",
-      value: "$420",
-      description: "From last month",
+      title: "Budget Status",
+      value: `${budgetStatus}%`,
+      description: "Utilization",
       icon: Percent,
-      change: "+8.2%",
-      changeType: "increase",
+      change: budgetStatus <= 100 ? "Within budget" : "Exceeded",
+      changeType: budgetStatus <= 100 ? "increase" : "decrease",
     },
-  ]
-
+  ];
 
   if (isAuthenticated === null || isAuthenticated === false) {
-    return null
+    return null;
   }
 
   return (
@@ -135,8 +163,8 @@ export default function Dashboard() {
                         stat.changeType === "increase"
                           ? "text-green-500"
                           : stat.changeType === "decrease"
-                            ? "text-red-500"
-                            : "text-muted-foreground"
+                          ? "text-red-500"
+                          : "text-muted-foreground"
                       }
                     >
                       {stat.change}
@@ -163,7 +191,7 @@ export default function Dashboard() {
                 <CardDescription>Your spending over the last 30 days</CardDescription>
               </CardHeader>
               <CardContent>
-                <ExpenseChart />
+                <ExpenseChart expenses={expenses} />
               </CardContent>
             </Card>
           </ThreeDCard>
@@ -185,23 +213,24 @@ export default function Dashboard() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Overall Budget</span>
-                      <span className="text-sm font-medium">{progress}%</span>
+                      <span className="text-sm font-medium">
+                        {budget > 0 ? `${symbol}${budget.toFixed(2)}` : "-"}
+                      </span>
                     </div>
                     <Progress
-                      value={progress}
+                      value={budget > 0 ? budgetStatus : 0}
                       className="h-2"
                       style={{
                         background: "rgba(30, 30, 35, 0.5)",
-                        boxShadow: progress > 80 ? "0 0 10px rgba(239, 68, 68, 0.7)" : "none",
+                        boxShadow: budgetStatus > 80 ? "0 0 10px rgba(239, 68, 68, 0.7)" : "none",
                       }}
                     />
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>$0</span>
-                      <span>$3,600</span>
+                      <span>{symbol}0</span>
+                      <span>{symbol}{budget > 0 ? budget.toFixed(2) : "-"}</span>
                     </div>
                   </div>
-
-                  <CategoryBreakdown />
+                  <CategoryBreakdown expenses={expenses} />
                 </div>
               </CardContent>
             </Card>
@@ -221,13 +250,13 @@ export default function Dashboard() {
               <CardDescription>Your latest expenses</CardDescription>
             </CardHeader>
             <CardContent>
-              <RecentTransactions />
+              <RecentTransactions expenses={expenses} />
             </CardContent>
           </Card>
         </ThreeDCard>
       </motion.div>
-      <Footer/>
-    </div>
-  )
-}
 
+      <Footer />
+    </div>
+  );
+}
