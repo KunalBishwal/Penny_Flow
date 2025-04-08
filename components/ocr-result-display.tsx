@@ -1,100 +1,106 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Calendar } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Calendar as CalendarComponent } from "@/components/ui/calendar"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { cn } from "@/lib/utils"
-import { format, isValid } from "date-fns"
-import { useToast } from "@/components/ui/use-toast"
-
-import { db, auth } from "@/lib/firebase"
-import { addDoc, collection, serverTimestamp } from "firebase/firestore"
-import { onAuthStateChanged, User } from "firebase/auth"
-
-import { GradientNotification } from "@/components/ui/gradient-notification"
-import { extractExpenseDataFromGemini } from "@/lib/gemini"
+import React, { useEffect, useState } from "react";
+import { Calendar } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { format, isValid } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { db, auth } from "@/lib/firebase";
+import { GradientNotification } from "@/components/ui/gradient-notification";
+import { extractExpenseDataFromGemini } from "@/lib/gemini";
+import { Button } from "@/components/ui/button";
 
 interface OcrResultDisplayProps {
   result: {
-    fullText: string
+    fullText: string;
     extractedInfo: {
-      date: string
-      amount: string
-      vendor: string
-    }
-  }
+      date: string;
+      amount: string;
+      vendor: string;
+      category?: string;
+    };
+  };
 }
 
 export function OcrResultDisplay({ result }: OcrResultDisplayProps) {
-  // Initialize state using OCR extracted data; may be updated by Gemini
   const [date, setDate] = useState<Date | undefined>(
-    result.extractedInfo.date ? new Date(result.extractedInfo.date) : undefined,
-  )
-  const [amount, setAmount] = useState(result.extractedInfo.amount)
-  const [vendor, setVendor] = useState(result.extractedInfo.vendor)
-  const [category, setCategory] = useState("Food")
-  const [loadingGemini, setLoadingGemini] = useState(false)
+    result.extractedInfo.date ? new Date(result.extractedInfo.date) : undefined
+  );
+  const [amount, setAmount] = useState(result.extractedInfo.amount);
+  const [vendor, setVendor] = useState(result.extractedInfo.vendor);
+  const [category, setCategory] = useState(result.extractedInfo.category || "Food");
+  const [loadingGemini, setLoadingGemini] = useState(false);
+  const [parsedGeminiData, setParsedGeminiData] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const { toast } = useToast();
 
-  const [user, setUser] = useState<User | null>(null)
-  const { toast } = useToast()
-
-  // Notification State
   const [notification, setNotification] = useState<{
-    type: "success" | "error"
-    title: string
-    description: string
-  } | null>(null)
+    type: "success" | "error";
+    title: string;
+    description: string;
+  } | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser)
-    })
-    return () => unsubscribe()
-  }, [])
+      setUser(firebaseUser);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  // Use Gemini to enhance/extract data from the OCR result
   useEffect(() => {
     const enrichWithGemini = async () => {
-      setLoadingGemini(true)
-      const enriched = await extractExpenseDataFromGemini(result.fullText)
-      setLoadingGemini(false)
-
-      if (enriched) {
-        if (enriched.amount) setAmount(enriched.amount)
-        if (enriched.vendor) setVendor(enriched.vendor)
-        if (enriched.date) {
-          const parsedDate = new Date(enriched.date)
-          setDate(isValid(parsedDate) ? parsedDate : undefined)
+      setLoadingGemini(true);
+      try {
+        const enriched = await extractExpenseDataFromGemini(result.fullText);
+        setLoadingGemini(false);
+        if (enriched) {
+          if (enriched.amount) setAmount(enriched.amount);
+          if (enriched.vendor) setVendor(enriched.vendor);
+          if (enriched.date) {
+            const parsedDate = new Date(enriched.date);
+            setDate(isValid(parsedDate) ? parsedDate : undefined);
+          }
+          if (enriched.category) setCategory(enriched.category);
+          setParsedGeminiData(enriched);
         }
-        if (enriched.category) setCategory(enriched.category)
+      } catch (error) {
+        setLoadingGemini(false);
+        console.error("Error enriching with Gemini:", error);
+        setNotification({
+          type: "error",
+          title: "AI Enrichment Failed",
+          description: "Failed to enhance OCR result with AI.",
+        });
       }
-    }
+    };
 
-    enrichWithGemini()
-  }, [result.fullText])
+    enrichWithGemini();
+  }, [result.fullText]);
 
   const saveExpense = async () => {
     if (!user) {
       setNotification({
         type: "error",
-        title: "Not logged in",
-        description: "Please log in to save your expenses.",
-      })
-      return
+        title: "Not Logged In",
+        description: "Please log in to save your expense.",
+      });
+      return;
     }
 
     if (!amount || !vendor || !date || !isValid(date)) {
       setNotification({
         type: "error",
-        title: "Missing fields",
-        description: "Please fill in all fields with valid data before saving.",
-      })
-      return
+        title: "Missing Info",
+        description: "Please fill in all required fields.",
+      });
+      return;
     }
 
     try {
@@ -104,22 +110,23 @@ export function OcrResultDisplay({ result }: OcrResultDisplayProps) {
         date: date.toISOString(),
         category,
         createdAt: serverTimestamp(),
-      })
+      });
 
       setNotification({
         type: "success",
-        title: "Expense saved!",
+        title: "Expense Saved",
         description: `${vendor} - $${amount}`,
-      })
-    } catch (error) {
-      console.error("Error saving expense:", error)
+      });
+
+    } catch (err) {
+      console.error("Save error:", err);
       setNotification({
         type: "error",
-        title: "Failed to save",
-        description: "Something went wrong saving your expense.",
-      })
+        title: "Error Saving",
+        description: "Something went wrong. Try again.",
+      });
     }
-  }
+  };
 
   return (
     <>
@@ -133,9 +140,7 @@ export function OcrResultDisplay({ result }: OcrResultDisplayProps) {
 
       <div className="space-y-4">
         {loadingGemini && (
-          <p className="text-sm italic text-muted-foreground">
-            Analyzing receipt with AI...
-          </p>
+          <p className="text-sm italic text-muted-foreground">Analyzing receipt with AI...</p>
         )}
 
         <div className="space-y-2">
@@ -208,5 +213,5 @@ export function OcrResultDisplay({ result }: OcrResultDisplayProps) {
         </Button>
       </div>
     </>
-  )
+  );
 }

@@ -1,4 +1,3 @@
-//C:\HTML CSS\WEB DEV COURSE H\React\Hackathon\try\try1\expense-tracker\app\analytics\page.tsx
 "use client"
 
 import { motion } from "framer-motion"
@@ -65,7 +64,6 @@ export default function AnalyticsPage() {
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
-
               <ThreeDCard>
                 <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
                   <CardHeader>
@@ -97,7 +95,7 @@ export default function AnalyticsPage() {
                             fontSize={12}
                             tickLine={false}
                             axisLine={{ stroke: "hsl(var(--border))" }}
-                            tickFormatter={(value) => `$${value}`}
+                            tickFormatter={(value) => `₹${value}`}
                           />
                           <ChartTooltip content={<ChartTooltipContent />} />
                           <Bar dataKey="amount" radius={[4, 4, 0, 0]} fill="hsl(var(--primary))" />
@@ -134,7 +132,7 @@ export default function AnalyticsPage() {
                             ))}
                           </Pie>
                           <Tooltip
-                            formatter={(value) => [`$${value}`, "Amount"]}
+                            formatter={(value) => [`₹${value}`, "Amount"]}
                             contentStyle={{
                               background: "rgba(30, 30, 35, 0.9)",
                               border: "1px solid rgba(255, 255, 255, 0.1)",
@@ -149,7 +147,6 @@ export default function AnalyticsPage() {
                   </CardContent>
                 </Card>
               </ThreeDCard>
-
             </div>
           </TabsContent>
 
@@ -176,7 +173,7 @@ export default function AnalyticsPage() {
                           fontSize={12}
                           tickLine={false}
                           axisLine={{ stroke: "hsl(var(--border))" }}
-                          tickFormatter={(value) => `$${value}`}
+                          tickFormatter={(value) => `₹${value}`}
                         />
                         <YAxis
                           type="category"
@@ -187,7 +184,7 @@ export default function AnalyticsPage() {
                           axisLine={{ stroke: "hsl(var(--border))" }}
                         />
                         <Tooltip
-                          formatter={(value) => [`$${value}`, "Amount"]}
+                          formatter={(value) => [`₹${value}`, "Amount"]}
                           contentStyle={{
                             background: "rgba(30, 30, 35, 0.9)",
                             border: "1px solid rgba(255, 255, 255, 0.1)",
@@ -241,7 +238,7 @@ export default function AnalyticsPage() {
                           fontSize={12}
                           tickLine={false}
                           axisLine={{ stroke: "hsl(var(--border))" }}
-                          tickFormatter={(value) => `$${value}`}
+                          tickFormatter={(value) => `₹${value}`}
                         />
                         <ChartTooltip content={<ChartTooltipContent />} />
                         <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="url(#colorGradient)" />

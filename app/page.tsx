@@ -26,9 +26,14 @@ import { RecentTransactions } from "@/components/recent-transactions";
 import { CategoryBreakdown } from "@/components/category-breakdown";
 import { ThreeDCard } from "@/components/three-d-card";
 import { Footer } from "@/components/Footer";
-import { getExpenses, getUserSettings, deleteExpense } from "@/lib/firestore";
+import {
+  getExpenses,
+  getUserSettings,
+  deleteExpense,
+} from "@/lib/firestore";
 import { getCurrencySymbol } from "@/lib/currency";
 import { auth } from "@/lib/firebase";
+import { sendBudgetAlertEmail } from "@/lib/mailService";
 
 export default function Dashboard() {
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -37,10 +42,32 @@ export default function Dashboard() {
   const headerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [alertSent, setAlertSent] = useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState("");
 
   const user = auth.currentUser;
   const userId = user?.uid || "";
+  const userEmail = user?.email || "";
 
+  // Time Display: update current date & time every second
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const options: Intl.DateTimeFormatOptions = {
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      };
+      setCurrentDateTime(now.toLocaleString("en-US", options));
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Auth Check
   useEffect(() => {
     const authenticated = sessionStorage.getItem("authenticated");
     if (authenticated === "true" && userId) {
@@ -53,16 +80,19 @@ export default function Dashboard() {
     }
   }, [router, userId]);
 
+  // GSAP Animation for header
   useEffect(() => {
-    if (!headerRef.current) return;
-    gsap.from(headerRef.current, {
-      y: -20,
-      opacity: 0,
-      duration: 0.8,
-      ease: "power3.out",
-    });
+    if (headerRef.current) {
+      gsap.from(headerRef.current, {
+        y: -20,
+        opacity: 0,
+        duration: 0.8,
+        ease: "power3.out",
+      });
+    }
   }, []);
 
+  // Data Fetching from Firestore
   useEffect(() => {
     async function fetchData() {
       try {
@@ -84,7 +114,7 @@ export default function Dashboard() {
     }
   }, [isAuthenticated, userId]);
 
-  // DELETE EXPENSE HANDLER
+  // Delete Handler for expenses
   const handleDeleteExpense = async (expenseId: string) => {
     try {
       await deleteExpense(userId, expenseId);
@@ -94,6 +124,7 @@ export default function Dashboard() {
     }
   };
 
+  // Budget Calculation
   const totalSpent = expenses.reduce((acc, exp) => acc + (exp.amount || 0), 0);
   const budget = userSettings?.budget || 0;
   const budgetLeft = budget - totalSpent;
@@ -102,6 +133,29 @@ export default function Dashboard() {
     budget > 0 ? Math.min(Math.round((totalSpent / budget) * 100), 100) : 0;
   const symbol = getCurrencySymbol(currency);
 
+  // Send alert email when budget is fully used
+  useEffect(() => {
+    const sendAlert = async () => {
+      if (
+        userEmail &&
+        budget > 0 &&
+        budgetStatus === 100 &&
+        !alertSent
+      ) {
+        try {
+          await sendBudgetAlertEmail(userEmail, budget, currency);
+          console.log("✅ Budget alert email sent to", userEmail);
+          setAlertSent(true);
+        } catch (err) {
+          console.error("❌ Failed to send budget alert email:", err);
+        }
+      }
+    };
+
+    sendAlert();
+  }, [budgetStatus, budget, currency, userEmail, alertSent]);
+
+  // Build stats array dynamically (could be moved to a hook or API call)
   const stats = [
     {
       title: "Total Spent",
@@ -140,22 +194,22 @@ export default function Dashboard() {
   if (isAuthenticated === null || isAuthenticated === false) return null;
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div ref={headerRef} className="flex items-center justify-between">
+    <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+      <div ref={headerRef} className="flex flex-col sm:flex-row items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight font-sf-pro gradient-text">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight font-sf-pro gradient-text">
             Dashboard
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             Track your expenses and budget at a glance.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">April 2025</span>
-        </div>
+        <span className="text-xs sm:text-sm text-muted-foreground mt-2 sm:mt-0">
+          {currentDateTime}
+        </span>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <motion.div
             key={stat.title}
@@ -164,18 +218,14 @@ export default function Dashboard() {
             transition={{ duration: 0.3, delay: index * 0.1 }}
           >
             <ThreeDCard>
-              <Card className="border border-border/50 bg-card/50 backdrop-blur-sm h-full">
+              <Card className="border border-gray-200 dark:border-gray-700 bg-card/50 backdrop-blur-sm h-full">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    {stat.title}
-                  </CardTitle>
+                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
                   <stat.icon className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {stat.description}
-                  </p>
+                  <div className="text-xl sm:text-2xl font-bold">{stat.value}</div>
+                  <p className="text-xs text-muted-foreground">{stat.description}</p>
                   <div className="mt-2 flex items-center text-xs">
                     {stat.changeType === "increase" ? (
                       <ArrowUp className="mr-1 h-3 w-3 text-green-500" />
@@ -199,7 +249,7 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <motion.div
           className="lg:col-span-2"
           initial={{ opacity: 0, y: 20 }}
@@ -207,12 +257,10 @@ export default function Dashboard() {
           transition={{ duration: 0.3, delay: 0.4 }}
         >
           <ThreeDCard depth={20} sensitivity={5}>
-            <Card className="border border-border/50 bg-card/50 backdrop-blur-sm h-full">
+            <Card className="border border-gray-200 dark:border-gray-700 bg-card/50 backdrop-blur-sm h-full">
               <CardHeader>
                 <CardTitle>Expense Trend</CardTitle>
-                <CardDescription>
-                  Your spending over the last 30 days
-                </CardDescription>
+                <CardDescription>Your spending over the last 30 days</CardDescription>
               </CardHeader>
               <CardContent>
                 <ExpenseChart expenses={expenses} />
@@ -227,13 +275,13 @@ export default function Dashboard() {
           transition={{ duration: 0.3, delay: 0.5 }}
         >
           <ThreeDCard depth={20} sensitivity={5}>
-            <Card className="border border-border/50 bg-card/50 backdrop-blur-sm h-full">
+            <Card className="border border-gray-200 dark:border-gray-700 bg-card/50 backdrop-blur-sm h-full">
               <CardHeader>
                 <CardTitle>Budget Status</CardTitle>
                 <CardDescription>Monthly budget progress</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
+                <div className="space-y-3">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Overall Budget</span>
@@ -274,7 +322,7 @@ export default function Dashboard() {
         transition={{ duration: 0.3, delay: 0.6 }}
       >
         <ThreeDCard depth={15} sensitivity={3}>
-          <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
+          <Card className="border border-gray-200 dark:border-gray-700 bg-card/50 backdrop-blur-sm">
             <CardHeader>
               <CardTitle>Recent Transactions</CardTitle>
               <CardDescription>Your latest expenses</CardDescription>

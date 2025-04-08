@@ -24,7 +24,6 @@ export default function LoginPage() {
     try {
       const result = await signInWithPopup(auth, provider);
 
-      // ✅ Firestore user init
       await createUserIfNotExists(result.user.uid);
 
       sessionStorage.setItem("authenticated", "true");
@@ -65,10 +64,10 @@ export default function LoginPage() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="relative z-10 w-full max-w-md"
+          className="relative z-10 w-full max-w-md mx-auto" // Added mx-auto here
         >
-          <ThreeDCard className="backdrop-blur-xl bg-card/30 p-8 rounded-2xl border border-blue-300 shadow-2xl hover:shadow-[0_0_15px_rgba(100,100,255,0.7)]">
-            <div className="mb-6 text-center">
+          <ThreeDCard className="backdrop-blur-xl bg-card/30 p-8 rounded-2xl border border-blue-300 shadow-2xl hover:shadow-[0_0_15px_rgba(100,100,255,0.7)] flex flex-col items-center"> {/* Added flex styling here */}
+            <div className="mb-6 w-full text-center"> {/* Added w-full */}
               <div className="flex justify-center items-center mb-2">
                 <Receipt className="h-8 w-8 text-primary mr-2" />
                 <h1 className="text-3xl font-bold font-sf-pro gradient-text">
@@ -80,7 +79,7 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <div className="space-y-6">
+            <div className="w-full space-y-6"> {/* Added w-full */}
               <Button
                 onClick={handleGoogleLogin}
                 className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transition-all duration-300"

@@ -1218,6 +1218,11 @@ video {
   margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));
   margin-bottom: calc(1.5rem * var(--tw-space-y-reverse));
 }
+.space-y-3 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.75rem * var(--tw-space-y-reverse));
+}
 .overflow-auto {
   overflow: auto;
 }
@@ -1232,6 +1237,9 @@ video {
 }
 .whitespace-nowrap {
   white-space: nowrap;
+}
+.whitespace-pre-wrap {
+  white-space: pre-wrap;
 }
 .break-words {
   overflow-wrap: break-word;
@@ -1273,11 +1281,11 @@ video {
 .border-2 {
   border-width: 2px;
 }
-.border-\[1\.5px\] {
-  border-width: 1.5px;
-}
 .border-4 {
   border-width: 4px;
+}
+.border-\[1\.5px\] {
+  border-width: 1.5px;
 }
 .border-y {
   border-top-width: 1px;
@@ -1323,6 +1331,9 @@ video {
 .border-input {
   border-color: hsl(var(--input));
 }
+.border-muted {
+  border-color: hsl(var(--muted));
+}
 .border-primary {
   border-color: hsl(var(--primary));
 }
@@ -1336,8 +1347,9 @@ video {
 .border-white\/20 {
   border-color: rgb(255 255 255 / 0.2);
 }
-.border-muted {
-  border-color: hsl(var(--muted));
+.border-gray-200 {
+  --tw-border-opacity: 1;
+  border-color: rgb(229 231 235 / var(--tw-border-opacity, 1));
 }
 .border-l-transparent {
   border-left-color: transparent;
@@ -1384,9 +1396,6 @@ video {
 .bg-foreground {
   background-color: hsl(var(--foreground));
 }
-.bg-green-500\/10 {
-  background-color: rgb(34 197 94 / 0.1);
-}
 .bg-muted {
   background-color: hsl(var(--muted));
 }
@@ -1402,20 +1411,15 @@ video {
 .bg-primary {
   background-color: hsl(var(--primary));
 }
-.bg-purple-500\/10 {
-  background-color: rgb(168 85 247 / 0.1);
-}
-.bg-red-500\/10 {
-  background-color: rgb(239 68 68 / 0.1);
-}
 .bg-secondary {
   background-color: hsl(var(--secondary));
 }
 .bg-transparent {
   background-color: transparent;
 }
-.bg-yellow-500\/10 {
-  background-color: rgb(234 179 8 / 0.1);
+.bg-white {
+  --tw-bg-opacity: 1;
+  background-color: rgb(255 255 255 / var(--tw-bg-opacity, 1));
 }
 .bg-gradient-to-b {
   background-image: linear-gradient(to bottom, var(--tw-gradient-stops));
@@ -1679,6 +1683,10 @@ video {
 .text-accent-foreground {
   color: hsl(var(--accent-foreground));
 }
+.text-black {
+  --tw-text-opacity: 1;
+  color: rgb(0 0 0 / var(--tw-text-opacity, 1));
+}
 .text-blue-500 {
   --tw-text-opacity: 1;
   color: rgb(59 130 246 / var(--tw-text-opacity, 1));
@@ -1721,10 +1729,6 @@ video {
 .text-primary-foreground {
   color: hsl(var(--primary-foreground));
 }
-.text-purple-500 {
-  --tw-text-opacity: 1;
-  color: rgb(168 85 247 / var(--tw-text-opacity, 1));
-}
 .text-red-500 {
   --tw-text-opacity: 1;
   color: rgb(239 68 68 / var(--tw-text-opacity, 1));
@@ -1741,10 +1745,6 @@ video {
 }
 .text-white\/90 {
   color: rgb(255 255 255 / 0.9);
-}
-.text-yellow-500 {
-  --tw-text-opacity: 1;
-  color: rgb(234 179 8 / var(--tw-text-opacity, 1));
 }
 .underline-offset-4 {
   text-underline-offset: 4px;
@@ -2815,6 +2815,10 @@ video {
 .dark\:border-destructive:is(.dark *) {
   border-color: hsl(var(--destructive));
 }
+.dark\:border-gray-700:is(.dark *) {
+  --tw-border-opacity: 1;
+  border-color: rgb(55 65 81 / var(--tw-border-opacity, 1));
+}
 @media (min-width: 640px) {
 
   .sm\:bottom-0 {
@@ -2899,8 +2903,32 @@ video {
     border-radius: var(--radius);
   }
 
+  .sm\:p-6 {
+    padding: 1.5rem;
+  }
+
   .sm\:text-left {
     text-align: left;
+  }
+
+  .sm\:text-2xl {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+
+  .sm\:text-3xl {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+
+  .sm\:text-base {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  .sm\:text-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
   }
 
   .data-\[state\=open\]\:sm\:slide-in-from-bottom-full[data-state="open"] {
@@ -2985,6 +3013,10 @@ video {
 
   .lg\:grid-cols-4 {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .lg\:p-8 {
+    padding: 2rem;
   }
 }
 .\[\&\:has\(\[aria-selected\]\)\]\:bg-accent:has([aria-selected]) {

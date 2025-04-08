@@ -13,7 +13,7 @@ import {
   Film,
 } from "lucide-react"
 
-import { auth, db } from "@/lib/firebase" // make sure this path is correct
+import { auth, db } from "@/lib/firebase"
 import { onAuthStateChanged } from "firebase/auth"
 import { collection, getDocs } from "firebase/firestore"
 
@@ -71,17 +71,26 @@ export default function TransactionsPage() {
 
       const fetched: Transaction[] = snapshot.docs.map((doc) => {
         const data = doc.data()
-        const icon = categoryIcons[data.category] || ShoppingBag
+
+        const name = typeof data.name === "string" && data.name.trim() ? data.name : "Unknown"
+        const category = typeof data.category === "string" && data.category.trim() ? data.category : "Uncategorized"
+        const amount = typeof data.amount === "number" ? data.amount : 0
+        const date = data.date
+          ? new Date(data.date).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })
+          : "Unknown Date"
+
+        const icon = categoryIcons[category] || ShoppingBag
+
         return {
           id: doc.id,
-          name: data.name || "Unknown",
-          category: data.category || "Uncategorized",
-          amount: data.amount || 0,
-          date: new Date(data.date).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          }),
+          name,
+          category,
+          amount,
+          date,
           icon,
           iconColor: "text-blue-500",
           iconBg: "bg-blue-500/10",
@@ -155,6 +164,7 @@ export default function TransactionsPage() {
                     <SelectItem value="Transport">Transport</SelectItem>
                     <SelectItem value="Utilities">Utilities</SelectItem>
                     <SelectItem value="Entertainment">Entertainment</SelectItem>
+                    <SelectItem value="Coffee">Coffee</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

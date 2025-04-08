@@ -1,5 +1,3 @@
-// app/settings/page.tsx
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -13,7 +11,10 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ThreeDCard } from "@/components/three-d-card";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 import { updateBudget } from "@/lib/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -25,11 +26,15 @@ export default function SettingsPage() {
   const [currency, setCurrency] = useState("");
   const [userId, setUserId] = useState("");
   const [notification, setNotification] = useState<{ type: "success" | "error"; title: string; description: string } | null>(null);
+  const [email, setEmail] = useState("");
+  const [alertEnabled, setAlertEnabled] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     if (auth.currentUser) {
       const uid = auth.currentUser.uid;
       setUserId(uid);
+      setEmail(auth.currentUser.email || "");
       const fetchUserSettings = async () => {
         const userDoc = await getDoc(doc(db, "users", uid));
         if (userDoc.exists()) {
@@ -90,6 +95,7 @@ export default function SettingsPage() {
             <TabsTrigger value="appearance">Theme</TabsTrigger>
           </TabsList>
 
+          {/* 💰 Budget Tab */}
           <TabsContent value="budget" className="space-y-6">
             <ThreeDCard>
               <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
@@ -133,6 +139,66 @@ export default function SettingsPage() {
                     Save Budget Settings
                   </Button>
                 </CardFooter>
+              </Card>
+            </ThreeDCard>
+          </TabsContent>
+
+          {/* 👤 Account Tab */}
+          <TabsContent value="account" className="space-y-6">
+            <ThreeDCard>
+              <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle>Account Information</CardTitle>
+                  <CardDescription>View your basic account details.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>Email</Label>
+                    <Input disabled value={email} />
+                  </div>
+                  <div>
+                    <Label>User ID</Label>
+                    <Input disabled value={userId} />
+                  </div>
+                </CardContent>
+              </Card>
+            </ThreeDCard>
+          </TabsContent>
+
+          {/* 🔔 Alerts Tab */}
+          <TabsContent value="notifications" className="space-y-6">
+            <ThreeDCard>
+              <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle>Alerts & Notifications</CardTitle>
+                  <CardDescription>Manage alert preferences for your account.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label>Email Alerts</Label>
+                    <Switch checked={alertEnabled} onCheckedChange={setAlertEnabled} />
+                  </div>
+                  <p className="text-sm text-muted-foreground">You'll get notified when spending exceeds your budget.</p>
+                </CardContent>
+              </Card>
+            </ThreeDCard>
+          </TabsContent>
+
+          {/* 🎨 Theme Tab */}
+          <TabsContent value="appearance" className="space-y-6">
+            <ThreeDCard>
+              <Card className="border border-border/50 bg-card/50 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle>Appearance</CardTitle>
+                  <CardDescription>Customize the app theme.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label>Dark Mode</Label>
+                    <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+                  </div>
+                  <p className="text-sm text-muted-foreground">Coming soon: fully customizable themes and layouts.</p>
+                </CardContent>
               </Card>
             </ThreeDCard>
           </TabsContent>
