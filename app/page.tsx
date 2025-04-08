@@ -44,12 +44,14 @@ export default function Dashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [alertSent, setAlertSent] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState("");
+  const [alertSent50, setAlertSent50] = useState(false);
+  const [alertSent100, setAlertSent100] = useState(false);
 
   const user = auth.currentUser;
   const userId = user?.uid || "";
   const userEmail = user?.email || "";
 
-  // Time Display: update current date & time every second
+
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -124,7 +126,7 @@ export default function Dashboard() {
     }
   };
 
-  // Budget Calculation
+
   const totalSpent = expenses.reduce((acc, exp) => acc + (exp.amount || 0), 0);
   const budget = userSettings?.budget || 0;
   const budgetLeft = budget - totalSpent;
@@ -133,27 +135,42 @@ export default function Dashboard() {
     budget > 0 ? Math.min(Math.round((totalSpent / budget) * 100), 100) : 0;
   const symbol = getCurrencySymbol(currency);
 
-  // Send alert email when budget is fully used
   useEffect(() => {
     const sendAlert = async () => {
-      if (
-        userEmail &&
-        budget > 0 &&
-        budgetStatus === 100 &&
-        !alertSent
-      ) {
-        try {
-          await sendBudgetAlertEmail(userEmail, budget, currency);
-          console.log("✅ Budget alert email sent to", userEmail);
-          setAlertSent(true);
-        } catch (err) {
-          console.error("❌ Failed to send budget alert email:", err);
+      if (userEmail && budget > 0) {
+   
+        if (budgetStatus >= 100 && !alertSent100) {
+          const message = `Hi there,
+  
+  Just a heads-up! You've exceeded your monthly budget of ${currency} ${budget}. Time to pump the brakes on those expenses!
+  
+  Stay money-smart! 💸`;
+          try {
+            await sendBudgetAlertEmail(userEmail, budget, currency, message);
+            console.log("✅ Budget alert email (100%) sent to", userEmail);
+            setAlertSent100(true);
+          } catch (err) {
+            console.error("❌ Failed to send 100% budget alert email:", err);
+          }
+        }
+      
+        else if (budgetStatus >= 50 && budgetStatus < 100 && !alertSent50) {
+          const message = "🚨 Heads up! You've used 50% of your budget.";
+          try {
+            await sendBudgetAlertEmail(userEmail, budget, currency, message);
+            console.log("✅ Budget alert email (50%) sent to", userEmail);
+            setAlertSent50(true);
+          } catch (err) {
+            console.error("❌ Failed to send 50% budget alert email:", err);
+          }
         }
       }
     };
-
+  
     sendAlert();
-  }, [budgetStatus, budget, currency, userEmail, alertSent]);
+  }, [budgetStatus, budget, currency, userEmail, alertSent50, alertSent100]);
+  
+
 
   // Build stats array dynamically (could be moved to a hook or API call)
   const stats = [

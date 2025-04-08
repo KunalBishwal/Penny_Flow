@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { motion } from "framer-motion"
+import { motion } from "framer-motion";
 import {
   Bar,
   BarChart,
@@ -13,47 +13,70 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts"
+} from "recharts";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { ThreeDCard } from "@/components/three-d-card";
+import { useAnalyticsData } from "@/hooks/useAnalyticsData";
+import { auth } from "@/lib/firebase";
+import { Footer } from "@/components/Footer";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { ThreeDCard } from "@/components/three-d-card"
+// Define a type for custom label props
+interface CustomPieLabelProps {
+  cx: number;
+  cy: number;
+  midAngle: number;
+  innerRadius: number;
+  outerRadius: number;
+  percent: number;
+  name: string;
+}
 
-// Sample data
-const monthlyData = [
-  { month: "Jan", amount: 1200 },
-  { month: "Feb", amount: 1800 },
-  { month: "Mar", amount: 1400 },
-  { month: "Apr", amount: 2450 },
-]
-
-const categoryData = [
-  { name: "Food", value: 850, color: "#00f0ff" },
-  { name: "Transport", value: 450, color: "#9f00ff" },
-  { name: "Shopping", value: 650, color: "#ff00f0" },
-  { name: "Bills", value: 500, color: "#0070f3" },
-]
-
-const weekdayData = [
-  { name: "Mon", value: 120 },
-  { name: "Tue", value: 180 },
-  { name: "Wed", value: 240 },
-  { name: "Thu", value: 300 },
-  { name: "Fri", value: 420 },
-  { name: "Sat", value: 380 },
-  { name: "Sun", value: 210 },
-]
+// Custom label component – show label only if percentage is above 5%
+function CustomPieLabel({
+  cx,
+  cy,
+  midAngle,
+  innerRadius,
+  outerRadius,
+  percent,
+  name,
+}: CustomPieLabelProps): React.ReactElement | null {
+  if (percent * 100 < 5) return null;
+  const RADIAN = Math.PI / 180;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  return (
+    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central">
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+}
 
 export default function AnalyticsPage() {
+  const user = auth.currentUser;
+  const userId = user?.uid || "";
+  const { monthlyData, categoryData, weekdayData } = useAnalyticsData(userId);
+
   return (
-    <div className="container mx-auto py-6">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+    <div className="container mx-auto py-6 px-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
         <div className="mb-6">
           <h1 className="text-3xl font-bold tracking-tight font-sf-pro">Analytics</h1>
           <p className="text-muted-foreground">Visualize your spending patterns and trends.</p>
         </div>
-
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="grid w-full max-w-md grid-cols-3">
             <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -83,22 +106,10 @@ export default function AnalyticsPage() {
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis
-                            dataKey="month"
-                            stroke="hsl(var(--muted-foreground))"
-                            fontSize={12}
-                            tickLine={false}
-                            axisLine={{ stroke: "hsl(var(--border))" }}
-                          />
-                          <YAxis
-                            stroke="hsl(var(--muted-foreground))"
-                            fontSize={12}
-                            tickLine={false}
-                            axisLine={{ stroke: "hsl(var(--border))" }}
-                            tickFormatter={(value) => `₹${value}`}
-                          />
+                          <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(v) => `₹${v}`} />
                           <ChartTooltip content={<ChartTooltipContent />} />
-                          <Bar dataKey="amount" radius={[4, 4, 0, 0]} fill="hsl(var(--primary))" />
+                          <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </ChartContainer>
@@ -113,37 +124,28 @@ export default function AnalyticsPage() {
                     <CardDescription>Breakdown of your expenses by category</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={categoryData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={100}
-                            paddingAngle={2}
-                            dataKey="value"
-                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                            labelLine={false}
-                          >
-                            {categoryData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            formatter={(value) => [`₹${value}`, "Amount"]}
-                            contentStyle={{
-                              background: "rgba(30, 30, 35, 0.9)",
-                              border: "1px solid rgba(255, 255, 255, 0.1)",
-                              borderRadius: "0.5rem",
-                              color: "white",
-                            }}
-                          />
-                          <Legend />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={categoryData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={100}
+                          paddingAngle={2}
+                          label={CustomPieLabel}
+                          labelLine={false}
+                        >
+                          {categoryData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(v) => [`₹${v}`, "Amount"]} />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </CardContent>
                 </Card>
               </ThreeDCard>
@@ -159,47 +161,24 @@ export default function AnalyticsPage() {
                   <CardDescription>Detailed view of your spending by category</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[400px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={categoryData}
-                        layout="vertical"
-                        margin={{ top: 10, right: 10, left: 80, bottom: 0 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis
-                          type="number"
-                          stroke="hsl(var(--muted-foreground))"
-                          fontSize={12}
-                          tickLine={false}
-                          axisLine={{ stroke: "hsl(var(--border))" }}
-                          tickFormatter={(value) => `₹${value}`}
-                        />
-                        <YAxis
-                          type="category"
-                          dataKey="name"
-                          stroke="hsl(var(--muted-foreground))"
-                          fontSize={12}
-                          tickLine={false}
-                          axisLine={{ stroke: "hsl(var(--border))" }}
-                        />
-                        <Tooltip
-                          formatter={(value) => [`₹${value}`, "Amount"]}
-                          contentStyle={{
-                            background: "rgba(30, 30, 35, 0.9)",
-                            border: "1px solid rgba(255, 255, 255, 0.1)",
-                            borderRadius: "0.5rem",
-                            color: "white",
-                          }}
-                        />
-                        <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                          {categoryData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <BarChart data={categoryData} layout="vertical" margin={{ top: 10, right: 10, left: 80, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis
+                        type="number"
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                        tickFormatter={(v) => `₹${v}`}
+                      />
+                      <YAxis type="category" dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                      <Tooltip formatter={(v) => [`₹${v}`, "Amount"]} />
+                      <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                        {categoryData.map((entry, index) => (
+                          <Cell key={`bar-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 </CardContent>
               </Card>
             </ThreeDCard>
@@ -226,22 +205,10 @@ export default function AnalyticsPage() {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={weekdayData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis
-                          dataKey="name"
-                          stroke="hsl(var(--muted-foreground))"
-                          fontSize={12}
-                          tickLine={false}
-                          axisLine={{ stroke: "hsl(var(--border))" }}
-                        />
-                        <YAxis
-                          stroke="hsl(var(--muted-foreground))"
-                          fontSize={12}
-                          tickLine={false}
-                          axisLine={{ stroke: "hsl(var(--border))" }}
-                          tickFormatter={(value) => `₹${value}`}
-                        />
+                        <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={(v) => `₹${v}`} />
                         <ChartTooltip content={<ChartTooltipContent />} />
-                        <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="url(#colorGradient)" />
+                        <Bar dataKey="value" fill="url(#colorGradient)" radius={[4, 4, 0, 0]} />
                         <defs>
                           <linearGradient id="colorGradient" x1="0" y1="0" x2="1" y2="0">
                             <stop offset="0%" stopColor="#00f0ff" />
@@ -258,6 +225,7 @@ export default function AnalyticsPage() {
           </TabsContent>
         </Tabs>
       </motion.div>
+      <Footer />
     </div>
-  )
+  );
 }

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { Receipt, ArrowRight } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { AnimatedBackground } from "@/components/animated-background";
@@ -18,6 +19,17 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  // 🔐 Check if user is already logged in
+  useEffect(() => {
+    const authenticated = sessionStorage.getItem("authenticated");
+    if (authenticated === "true") {
+      router.push("/"); // 👈 Already logged in, redirect to dashboard
+    } else {
+      setIsAuthenticated(false); // Not authenticated, show login UI
+    }
+  }, [router]);
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
@@ -33,7 +45,7 @@ export default function LoginPage() {
         description: `Welcome, ${result.user.displayName}!`,
       });
 
-      setTransitioning(true); // Trigger animation transition
+      setTransitioning(true); // Trigger transition animation
     } catch (error) {
       toast({
         variant: "destructive",
@@ -44,19 +56,21 @@ export default function LoginPage() {
     }
   };
 
-  // Navigate to dashboard once the animation completes
   const handleTransitionComplete = () => {
-    router.push("/");
+    router.push("/"); // Go to dashboard
   };
+
+  // Don’t render anything until auth check is done
+  if (isAuthenticated === null) return null;
 
   return (
     <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden">
-      {/* Animated BG */}
+      {/* ✨ Animated Background */}
       <div className="absolute inset-0 z-0">
         <AnimatedBackground />
       </div>
 
-      {/* Transition Animation */}
+      {/* 🚀 Transition animation after login */}
       {transitioning ? (
         <PaperPlaneTransition onComplete={handleTransitionComplete} />
       ) : (
@@ -64,10 +78,10 @@ export default function LoginPage() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="relative z-10 w-full max-w-md mx-auto" // Added mx-auto here
+          className="relative z-10 w-full max-w-md mx-auto"
         >
-          <ThreeDCard className="backdrop-blur-xl bg-card/30 p-8 rounded-2xl border border-blue-300 shadow-2xl hover:shadow-[0_0_15px_rgba(100,100,255,0.7)] flex flex-col items-center"> {/* Added flex styling here */}
-            <div className="mb-6 w-full text-center"> {/* Added w-full */}
+          <ThreeDCard className="backdrop-blur-xl bg-card/30 p-8 rounded-2xl border border-blue-300 shadow-2xl hover:shadow-[0_0_15px_rgba(100,100,255,0.7)] flex flex-col items-center">
+            <div className="mb-6 w-full text-center">
               <div className="flex justify-center items-center mb-2">
                 <Receipt className="h-8 w-8 text-primary mr-2" />
                 <h1 className="text-3xl font-bold font-sf-pro gradient-text">
@@ -79,7 +93,7 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <div className="w-full space-y-6"> {/* Added w-full */}
+            <div className="w-full space-y-6">
               <Button
                 onClick={handleGoogleLogin}
                 className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transition-all duration-300"

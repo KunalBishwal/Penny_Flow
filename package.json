@@ -56,6 +56,8 @@
     "framer-motion": "latest",
     "gsap": "latest",
     "input-otp": "1.4.1",
+    "jspdf": "^3.0.1",
+    "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.454.0",
     "next": "15.2.4",
     "next-themes": "^0.4.4",
@@ -65,6 +67,7 @@
     "react-dom": "^19",
     "react-hook-form": "^7.54.1",
     "react-native": "latest",
+    "react-native-get-sms-android": "^2.1.0",
     "react-resizable-panels": "^2.1.7",
     "recharts": "latest",
     "sonner": "^1.7.1",
@@ -81,6 +84,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "postcss": "^8",
+    "@react-native-community/cli": "latest",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"
   }

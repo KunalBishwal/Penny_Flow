@@ -1,7 +1,8 @@
 {
-  "/add/page": "app/add/page.js",
+  "/api/sendBudgetAlertEmail/route": "app/api/sendBudgetAlertEmail/route.js",
+  "/transactions/page": "app/transactions/page.js",
   "/page": "app/page.js",
-  "/login/page": "app/login/page.js",
-  "/upload/page": "app/upload/page.js",
-  "/analytics/page": "app/analytics/page.js"
+  "/analytics/page": "app/analytics/page.js",
+  "/settings/page": "app/settings/page.js",
+  "/add/page": "app/add/page.js"
 }
