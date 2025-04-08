@@ -1,4 +1,15 @@
 export async function extractExpenseDataFromGemini(ocrText: string) {
+  // If the text contains "OTP" (case-insensitive), immediately return DENIED.
+  if (/otp/i.test(ocrText)) {
+    console.warn("❌ OTP detected in text. Denying processing.");
+    return {
+      vendor: "DENIED",
+      amount: "DENIED",
+      date: "DENIED",
+      category: "DENIED",
+    };
+  }
+
   const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("Gemini API key is missing. Check your .env.local file.");

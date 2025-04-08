@@ -21,6 +21,16 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/sendBudgetAlertEmail/route.js"
     ],
+    "/upload/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/upload/page.js"
+    ],
+    "/add/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/add/page.js"
+    ],
     "/transactions/loading": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -40,11 +50,6 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/settings/page.js"
-    ],
-    "/add/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/add/page.js"
     ]
   }
 }

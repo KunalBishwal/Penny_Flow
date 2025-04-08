@@ -79,6 +79,7 @@ export default function UploadPage() {
         geminiData = null;
       }
 
+      // If Gemini didn't return valid data, use some defaults
       const extractedInfo = geminiData || {
         vendor: data.text.split("\n")[0] || "Unknown",
         amount:
@@ -114,6 +115,7 @@ export default function UploadPage() {
 
     try {
       const geminiData = await extractExpenseDataFromGemini(textFileContent);
+      // If Gemini returns null or empty, set default values
       const extractedInfo = geminiData || {
         vendor: "Unknown",
         amount: "Unknown",
