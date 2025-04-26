@@ -113,6 +113,7 @@ export default function LoginPage() {
               </p>
             </div>
 
+            {/* Login Form */}
             <form onSubmit={handleEmailPasswordLogin} className="w-full space-y-6">
               <div className="space-y-2">
                 <label htmlFor="email" className="block text-sm font-medium text-muted-foreground">
@@ -158,15 +159,32 @@ export default function LoginPage() {
               </Button>
             </form>
 
+            {/* OR Divider */}
             <div className="my-4 w-full text-center text-muted-foreground">
               OR
             </div>
 
+            {/* Google Button */}
             <GoogleButton
               onClick={handleGoogleLogin}
               disabled={isLoading}
               style={{ width: "100%" }}
             />
+
+            {/* 🆕 About Us Section */}
+            <div className="mt-6 w-full text-center">
+              <p className="text-sm text-muted-foreground mb-2">
+                Want to know us more?
+              </p>
+              <Button
+                variant="outline"
+                className="w-full hover:bg-primary hover:text-white transition-all duration-300"
+                onClick={() => router.push("/about")}
+              >
+                About PennyFlow
+              </Button>
+            </div>
+
           </ThreeDCard>
         </motion.div>
       )}
