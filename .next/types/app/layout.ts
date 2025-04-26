@@ -1,4 +1,4 @@
-// File: C:\HTML CSS\WEB DEV COURSE H\React\Hackathon\try\try1\expense-tracker\app\layout.tsx
+// File: C:\HTML CSS\WEB DEV COURSE H\React\Hackathon\Expense-Tracker\Penny_Flow\app\layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

@@ -42,7 +42,8 @@ export default function AddExpensePage() {
   const [description, setDescription] = useState("");
   const [note, setNote] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const { currency } = useCurrency();
+  const [currency, setCurrency] = useState("₹");
+
   const [userId, setUserId] = useState<string>("");
   const [notification, setNotification] = useState<{
     type: "success" | "error";

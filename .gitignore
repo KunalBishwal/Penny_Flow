@@ -1,4 +1,5 @@
 .qodo
+
 node_modules
 # .gitignore
 .env.local

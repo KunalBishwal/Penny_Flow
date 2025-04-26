@@ -12,7 +12,7 @@ import {
 import { motion } from "framer-motion";
 import { gsap } from "gsap";
 import { useRouter } from "next/navigation";
-
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -138,7 +138,7 @@ export default function Dashboard() {
   useEffect(() => {
     const sendAlert = async () => {
       if (userEmail && budget > 0) {
-   
+
         if (budgetStatus >= 100 && !alertSent100) {
           const message = `Hi there,
   
@@ -153,7 +153,7 @@ export default function Dashboard() {
             console.error("❌ Failed to send 100% budget alert email:", err);
           }
         }
-      
+
         else if (budgetStatus >= 50 && budgetStatus < 100 && !alertSent50) {
           const message = "🚨 Heads up! You've used 50% of your budget.";
           try {
@@ -166,10 +166,10 @@ export default function Dashboard() {
         }
       }
     };
-  
+
     sendAlert();
   }, [budgetStatus, budget, currency, userEmail, alertSent50, alertSent100]);
-  
+
 
 
   // Build stats array dynamically (could be moved to a hook or API call)
@@ -354,6 +354,36 @@ export default function Dashboard() {
         </ThreeDCard>
       </motion.div>
 
+      {/* Currency Converter Card Animation */}
+      <motion.div
+        initial={{ opacity: 0, x: 100, rotate: 180 }}
+        whileInView={{ opacity: 1, x: 0, rotate: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="col-span-1 sm:col-span-2 lg:col-span-1"
+      >
+        <ThreeDCard depth={15} sensitivity={3}>
+          <Card className="border border-gray-200 dark:border-gray-700 bg-card/50 backdrop-blur-sm p-4">
+            <CardHeader>
+              <CardTitle>PennyFlow&apos;s Currency Converter</CardTitle>
+              <CardDescription>
+                Convert currencies – because money talks and conversions should too!
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Ready to make your money speak a new language? Click below!
+              </p>
+              <Button
+                onClick={() => router.push("/CurrencyConverter")}
+                className="mt-4 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90"
+              >
+                Go Convert!
+              </Button>
+            </CardContent>
+          </Card>
+        </ThreeDCard>
+      </motion.div>
       <Footer />
     </div>
   );

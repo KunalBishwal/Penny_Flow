@@ -3,7 +3,6 @@
 import type React from "react"
 import { useRef, useState, useEffect } from "react"
 import { gsap } from "gsap"
-
 interface ThreeDCardProps {
   children: React.ReactNode
   className?: string
@@ -102,15 +101,12 @@ export function ThreeDCard({ children, className = "", depth = 30, sensitivity =
         rounded-2xl
         bg-black/50
         backdrop-blur
+        threeDCard
         ${className}
       `}
       onMouseEnter={() => setIsHovered(true)}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      style={{
-        transformStyle: "preserve-3d",
-        boxShadow: "0 0 20px rgba(0, 217, 255, 0.08)",
-      }}
     >
       {/* Glow effect under cursor */}
       {isHovered && (

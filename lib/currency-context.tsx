@@ -1,9 +1,9 @@
-// lib/currency-context.tsx
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 import { auth, db } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
 
+// Set a default context value
 const CurrencyContext = createContext<{ currency: string }>({ currency: "$" });
 
 export const CurrencyProvider = ({ children }: { children: React.ReactNode }) => {
@@ -13,13 +13,25 @@ export const CurrencyProvider = ({ children }: { children: React.ReactNode }) =>
     const fetchCurrency = async () => {
       const user = auth.currentUser;
       if (!user) return;
+
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
+
       if (userSnap.exists()) {
         const data = userSnap.data();
-        setCurrency(data.currency || "$");
+        const currencySymbol = data.currency;
+
+        // Normalize supported symbols
+        if (currencySymbol === "₹" || currencySymbol === "INR") {
+          setCurrency("₹");
+        } else if (currencySymbol === "$" || currencySymbol === "USD") {
+          setCurrency("$");
+        } else {
+          setCurrency("$"); 
+        }
       }
     };
+
     fetchCurrency();
   }, []);
 

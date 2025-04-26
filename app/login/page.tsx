@@ -3,16 +3,18 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Receipt, ArrowRight } from "lucide-react";
+import GoogleButton from "react-google-button";
+import { Receipt } from "lucide-react";
 
+import { ThreeDCard } from "@/components/three-d-card";
+import { AnimatedBackground } from "@/components/animated-background";
+import PaperPlaneTransition from "@/components/PaperPlaneTransition";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { AnimatedBackground } from "@/components/animated-background";
+
+import { auth, provider, signInWithEmailAndPassword } from "@/lib/firebase";
 import { signInWithPopup } from "firebase/auth";
-import { auth, provider } from "@/lib/firebase";
 import { createUserIfNotExists } from "@/lib/firestore";
-import { ThreeDCard } from "@/components/three-d-card";
-import PaperPlaneTransition from "@/components/PaperPlaneTransition";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,14 +22,15 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  // 🔐 Check if user is already logged in
   useEffect(() => {
     const authenticated = sessionStorage.getItem("authenticated");
     if (authenticated === "true") {
-      router.push("/"); // 👈 Already logged in, redirect to dashboard
+      router.push("/");
     } else {
-      setIsAuthenticated(false); // Not authenticated, show login UI
+      setIsAuthenticated(false);
     }
   }, [router]);
 
@@ -35,17 +38,13 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const result = await signInWithPopup(auth, provider);
-
       await createUserIfNotExists(result.user.uid);
-
       sessionStorage.setItem("authenticated", "true");
-
       toast({
         title: "Login successful",
         description: `Welcome, ${result.user.displayName}!`,
       });
-
-      setTransitioning(true); // Trigger transition animation
+      setTransitioning(true);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -56,21 +55,42 @@ export default function LoginPage() {
     }
   };
 
-  const handleTransitionComplete = () => {
-    router.push("/"); // Go to dashboard
+  const handleEmailPasswordLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      await createUserIfNotExists(result.user.uid);
+      sessionStorage.setItem("authenticated", "true");
+      toast({
+        title: "Login successful",
+        description: `Welcome, ${result.user.email}!`,
+      });
+      setTransitioning(true);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Login failed",
+        description: "Email/password authentication failed.",
+      });
+      setIsLoading(false);
+    }
   };
 
-  // Don’t render anything until auth check is done
+  const handleTransitionComplete = () => {
+    router.push("/");
+  };
+
   if (isAuthenticated === null) return null;
 
   return (
     <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden">
-      {/* ✨ Animated Background */}
+      {/* Animated Background */}
       <div className="absolute inset-0 z-0">
         <AnimatedBackground />
       </div>
 
-      {/* 🚀 Transition animation after login */}
+      {/* Transition Animation after login */}
       {transitioning ? (
         <PaperPlaneTransition onComplete={handleTransitionComplete} />
       ) : (
@@ -83,43 +103,70 @@ export default function LoginPage() {
           <ThreeDCard className="backdrop-blur-xl bg-card/30 p-8 rounded-2xl border border-blue-300 shadow-2xl hover:shadow-[0_0_15px_rgba(100,100,255,0.7)] flex flex-col items-center">
             <div className="mb-6 w-full text-center">
               <div className="flex justify-center items-center mb-2">
-                <Receipt className="h-8 w-8 text-primary mr-2" />
-                <h1 className="text-3xl font-bold font-sf-pro gradient-text">
+                <Receipt className="h-8 w-8 text-primary" />
+                <h1 className="text-3xl font-bold font-sf-pro gradient-text ml-2">
                   PennyFlow
                 </h1>
               </div>
               <p className="text-muted-foreground">
-                Sign in with your Google account to track your expenses with AI.
+                Sign in to track your expenses with AI.
               </p>
             </div>
 
-            <div className="w-full space-y-6">
+            <form onSubmit={handleEmailPasswordLogin} className="w-full space-y-6">
+              <div className="space-y-2">
+                <label htmlFor="email" className="block text-sm font-medium text-muted-foreground">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full p-2 border rounded"
+                  placeholder="you@example.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="password" className="block text-sm font-medium text-muted-foreground">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full p-2 border rounded"
+                  placeholder="********"
+                />
+              </div>
               <Button
-                onClick={handleGoogleLogin}
+                type="submit"
                 className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 transition-all duration-300"
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <div className="flex items-center">
-                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                    Signing in...
+                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                    Logging in...
                   </div>
                 ) : (
-                  <div className="flex items-center">
-                    Sign in with Google
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </div>
+                  "Sign In"
                 )}
               </Button>
-              <div className="text-center text-sm">
-                <span className="text-muted-foreground">
-                  Not a member? Learn more about PennyFlow{" "}
-                </span>
-                <a href="/about" className="text-primary hover:underline">
-                  here
-                </a>
-              </div>
+            </form>
+
+            <div className="my-4 w-full text-center text-muted-foreground">
+              OR
             </div>
+
+            <GoogleButton
+              onClick={handleGoogleLogin}
+              disabled={isLoading}
+              style={{ width: "100%" }}
+            />
           </ThreeDCard>
         </motion.div>
       )}

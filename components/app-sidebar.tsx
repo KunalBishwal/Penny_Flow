@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
+import { gsap } from "gsap";
 import {
   BarChart3,
   CreditCard,
@@ -11,8 +14,6 @@ import {
   Upload,
   LogOut,
 } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
@@ -30,6 +31,7 @@ import { Button } from "@/components/ui/button";
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const headerRef = useRef<HTMLSpanElement>(null);
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -37,12 +39,20 @@ export function AppSidebar() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
-
-      if (u) {
-        setLoggingOut(false);
-      }
+      setLoggingOut(false);
     });
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (headerRef.current) {
+      gsap.from(headerRef.current, {
+        y: -20,
+        opacity: 0,
+        duration: 0.5,
+        ease: "power2.out",
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -50,36 +60,12 @@ export function AppSidebar() {
   }, [pathname]);
 
   const navItems = [
-    {
-      title: "Dashboard",
-      icon: Home,
-      href: "/",
-    },
-    {
-      title: "Upload Receipt",
-      icon: Upload,
-      href: "/upload",
-    },
-    {
-      title: "Add Expense",
-      icon: Plus,
-      href: "/add",
-    },
-    {
-      title: "Transactions",
-      icon: CreditCard,
-      href: "/transactions",
-    },
-    {
-      title: "Analytics",
-      icon: BarChart3,
-      href: "/analytics",
-    },
-    {
-      title: "Settings",
-      icon: Settings,
-      href: "/settings",
-    },
+    { title: "Dashboard", icon: Home, href: "/" },
+    { title: "Upload Receipt", icon: Upload, href: "/upload" },
+    { title: "Add Expense", icon: Plus, href: "/add" },
+    { title: "Transactions", icon: CreditCard, href: "/transactions" },
+    { title: "Analytics", icon: BarChart3, href: "/analytics" },
+    { title: "Settings", icon: Settings, href: "/settings" },
   ];
 
   const logoutHandler = async () => {
@@ -89,7 +75,7 @@ export function AppSidebar() {
       sessionStorage.removeItem("authenticated");
       router.push("/login");
     } catch (error) {
-      console.error("Logout failed", error);
+      console.error("Logout failed:", error);
       setLoggingOut(false);
     }
   };
@@ -99,7 +85,10 @@ export function AppSidebar() {
       <SidebarHeader className="flex items-center justify-center p-4">
         <div className="flex items-center space-x-2">
           <Receipt className="h-8 w-8 text-primary" />
-          <span className="text-xl font-bold font-sf-pro bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
+          <span
+            ref={headerRef}
+            className="text-xl font-bold font-sf-pro bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent"
+          >
             PennyFlow
           </span>
         </div>
@@ -128,11 +117,13 @@ export function AppSidebar() {
         {user ? (
           <div className="flex flex-col items-center space-y-2">
             <div className="flex items-center space-x-2">
-              <img
-                src={user.photoURL || "/default-profile.png"}
-                alt="Profile"
-                className="h-8 w-8 rounded-full object-cover"
-              />
+              {user.photoURL && (
+                <img
+                  src={user.photoURL}
+                  alt="Profile"
+                  className="h-8 w-8 rounded-full object-cover"
+                />
+              )}
               <span className="text-sm font-medium">
                 {user.displayName || "User"}
               </span>
@@ -143,10 +134,10 @@ export function AppSidebar() {
               className="w-full bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90"
             >
               {loggingOut ? (
-                <div className="flex items-center justify-center">
+                <>
                   <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
                   Logging out...
-                </div>
+                </>
               ) : (
                 <>
                   <LogOut className="mr-2 h-4 w-4" />
