@@ -158,6 +158,9 @@ importers:
       lucide-react:
         specifier: ^0.454.0
         version: 0.454.0(react@19.1.0)
+      md5:
+        specifier: ^2.3.0
+        version: 2.3.0
       next:
         specifier: 15.2.4
         version: 15.2.4(@babel/core@7.26.10)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -176,9 +179,15 @@ importers:
       react-dom:
         specifier: ^19
         version: 19.1.0(react@19.1.0)
+      react-google-button:
+        specifier: ^0.8.0
+        version: 0.8.0(react@19.1.0)
       react-hook-form:
         specifier: ^7.54.1
         version: 7.55.0(react@19.1.0)
+      react-intersection-observer:
+        specifier: ^9.16.0
+        version: 9.16.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react-native:
         specifier: latest
         version: 0.79.0(@babel/core@7.26.10)(@react-native-community/cli@18.0.0(typescript@5.8.3))(@types/react@19.1.1)(react@19.1.0)
@@ -228,6 +237,9 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.1.2(@types/react@19.1.1)
+      '@types/three':
+        specifier: ^0.175.0
+        version: 0.175.0
       postcss:
         specifier: ^8
         version: 8.5.3
@@ -982,7 +994,7 @@ packages:
 
   '@expo/bunyan@4.0.1':
     resolution: {integrity: sha512-+Lla7nYSiHZirgK+U/uYzsLv/X+HaJienbD5AKX1UQZHYfWaP+9uuQluRB4GrEVWF0GZ7vEVp/jzaOT9k/SQlg==}
-    engines: {node: '>=0.10.0'}
+    engines: {'0': node >=0.10.0}
 
   '@expo/cli@0.22.24':
     resolution: {integrity: sha512-lhdenxBC8/x/vL39j79eXE09mOaqNNLmiSDdY/PblnI+UNzGgsQ48hBTYa/MQhd0ioXXVKurZL2941dLKwcxJw==}
@@ -4761,11 +4773,25 @@ packages:
     peerDependencies:
       react: ^19.1.0
 
+  react-google-button@0.8.0:
+    resolution: {integrity: sha512-0u6mbDcTUmWzgXsld8FJpbrXP+zDsNQVYPIt225aBqwgJ/CdrDiep1PZOpnyntyjsejWG0TtQr6uZB4eIaXlJQ==}
+    peerDependencies:
+      react: '>= 16.8.0'
+
   react-hook-form@7.55.0:
     resolution: {integrity: sha512-XRnjsH3GVMQz1moZTW53MxfoWN7aDpUg/GpVNc4A3eXRVNdGXfbzJ4vM4aLQ8g6XCUh1nIbx70aaNCl7kxnjog==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       react: ^16.8.0 || ^17 || ^18 || ^19
+
+  react-intersection-observer@9.16.0:
+    resolution: {integrity: sha512-w9nJSEp+DrW9KmQmeWHQyfaP6b03v+TdXynaoA964Wxt7mdR3An11z4NNCQgL4gKSK7y1ver2Fq+JKH6CWEzUA==}
+    peerDependencies:
+      react: ^17.0.0 || ^18.0.0 || ^19.0.0
+      react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      react-dom:
+        optional: true
 
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
@@ -11175,9 +11201,20 @@ snapshots:
       react: 19.1.0
       scheduler: 0.26.0
 
+  react-google-button@0.8.0(react@19.1.0):
+    dependencies:
+      prop-types: 15.8.1
+      react: 19.1.0
+
   react-hook-form@7.55.0(react@19.1.0):
     dependencies:
       react: 19.1.0
+
+  react-intersection-observer@9.16.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+    dependencies:
+      react: 19.1.0
+    optionalDependencies:
+      react-dom: 19.1.0(react@19.1.0)
 
   react-is@16.13.1: {}
 
