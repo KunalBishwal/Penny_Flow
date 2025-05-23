@@ -16,6 +16,10 @@ import {
 } from "lucide-react";
 
 import { auth } from "@/lib/firebase";
+import { getExpenses, getUserSettings, deleteExpense } from "@/lib/firestore";
+import { getCurrencySymbol } from "@/lib/currency";
+import { sendBudgetAlertEmail } from "@/lib/mailService";
+
 import { ThreeDCard } from "@/components/three-d-card";
 import { ExpenseChart } from "@/components/expense-chart";
 import { RecentTransactions } from "@/components/recent-transactions";
@@ -31,8 +35,6 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
-import { useDashboardStats } from "@/hooks/useDashboardStats";
-
 export default function Dashboard() {
   const router = useRouter();
 
@@ -40,24 +42,6 @@ export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
 
-  // ─── Data & Actions (custom hook) ───────────────────────────
-  const {
-    expenses,
-    budget,
-    currency,
-    totalSpent,
-    budgetLeft,
-    budgetStatus,
-    transactionCount,
-    symbol,
-    handleDeleteExpense,
-  } = useDashboardStats();
-
-  // ─── UI State ───────────────────────────────────────────────
-  const headerRef = useRef<HTMLDivElement>(null);
-  const [currentDateTime, setCurrentDateTime] = useState("");
-
-  // ─── 1) Listen for Firebase auth once ───────────────────────
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       if (u) {
@@ -70,12 +54,39 @@ export default function Dashboard() {
     return unsubscribe;
   }, [router]);
 
-  // ─── 2) Live clock ──────────────────────────────────────────
+  // ─── Data & UI State ────────────────────────────────────────
+  const [expenses, setExpenses] = useState<any[]>([]);
+  const [userSettings, setUserSettings] = useState<any>(null);
+  const [currency, setCurrency] = useState("USD ($)");
+  const [alertSent50, setAlertSent50] = useState(false);
+  const [alertSent100, setAlertSent100] = useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState("");
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  const userId = user?.uid || "";
+  const userEmail = user?.email || "";
+
+  // ─── Fetch Data ─────────────────────────────────────────────
   useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
+    if (!userId) return;
+    (async () => {
+      try {
+        const fetched = await getExpenses(userId);
+        setExpenses(fetched);
+        const settings = await getUserSettings(userId);
+        setUserSettings(settings);
+        if (settings.currency) setCurrency(settings.currency);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, [userId]);
+
+  // ─── Live Clock ─────────────────────────────────────────────
+  useEffect(() => {
+    const update = () => {
       setCurrentDateTime(
-        now.toLocaleString("en-US", {
+        new Date().toLocaleString("en-US", {
           month: "long",
           year: "numeric",
           hour: "2-digit",
@@ -84,12 +95,12 @@ export default function Dashboard() {
         })
       );
     };
-    updateTime();
-    const id = setInterval(updateTime, 1000);
+    update();
+    const id = setInterval(update, 1000);
     return () => clearInterval(id);
   }, []);
 
-  // ─── 3) GSAP header intro ───────────────────────────────────
+  // ─── Header Animation ───────────────────────────────────────
   useEffect(() => {
     if (headerRef.current) {
       gsap.from(headerRef.current, {
@@ -101,7 +112,63 @@ export default function Dashboard() {
     }
   }, []);
 
-  // ─── Build stats array ──────────────────────────────────────
+  // ─── Delete Expense ─────────────────────────────────────────
+  const handleDeleteExpense = async (expenseId: string) => {
+    try {
+      await deleteExpense(userId, expenseId);
+      setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // ─── Stats Calculations ─────────────────────────────────────
+  const totalSpent = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const budget = userSettings?.budget || 0;
+  const budgetLeft = budget - totalSpent;
+  const budgetStatus =
+    budget > 0
+      ? Math.min(Math.round((totalSpent / budget) * 100), 100)
+      : 0;
+  const transactionCount = expenses.length;
+  const symbol = getCurrencySymbol(currency);
+
+  // ─── Budget Alert Emails ────────────────────────────────────
+  useEffect(() => {
+    if (!userEmail || budget <= 0) return;
+    (async () => {
+      if (budgetStatus >= 100 && !alertSent100) {
+        try {
+          await sendBudgetAlertEmail(
+            userEmail,
+            budget,
+            currency,
+            `Hi there,\n\nYou've exceeded your monthly budget of ${currency} ${budget}!`
+          );
+          setAlertSent100(true);
+        } catch (err) {
+          console.error(err);
+        }
+      } else if (budgetStatus >= 50 && !alertSent50) {
+        try {
+          await sendBudgetAlertEmail(
+            userEmail,
+            budget,
+            currency,
+            `🚨 You've used 50% of your budget (${currency} ${(
+              budget *
+              0.5
+            ).toFixed(2)}).`
+          );
+          setAlertSent50(true);
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    })();
+  }, [budgetStatus, budget, currency, userEmail, alertSent50, alertSent100]);
+
+  // ─── Build Stats Array ──────────────────────────────────────
   const stats = [
     {
       title: "Total Spent",
@@ -141,9 +208,10 @@ export default function Dashboard() {
     },
   ];
 
-  // ─── now guard rendering ────────────────────────────────────
+  // ─── Auth Guard ─────────────────────────────────────────────
   if (!authChecked) return null;
 
+  // ─── Render ────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
       {/* Header */}
@@ -175,7 +243,7 @@ export default function Dashboard() {
           >
             <ThreeDCard>
               <Card className="bg-card/50 backdrop-blur-sm h-full">
-                <CardHeader className="flex items-center justify-between pb-2">
+                <CardHeader className="flex justify-between pb-2">
                   <CardTitle className="text-sm font-medium">
                     {stat.title}
                   </CardTitle>
@@ -209,7 +277,7 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Charts & Lists */}
+      {/* Expense Trend & Budget Status */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <motion.div
           className="lg:col-span-2"
@@ -241,7 +309,7 @@ export default function Dashboard() {
             <Card className="bg-card/50 backdrop-blur-sm h-full">
               <CardHeader>
                 <CardTitle>Budget Status</CardTitle>
-                <CardDescription>Monthly progress</CardDescription>
+                <CardDescription>Monthly budget progress</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -269,9 +337,7 @@ export default function Dashboard() {
                       <span>{symbol}0</span>
                       <span>
                         {symbol}
-                        {budget > 0
-                          ? budget.toFixed(2)
-                          : "-"}
+                        {budget > 0 ? budget.toFixed(2) : "-"}
                       </span>
                     </div>
                   </div>
@@ -300,6 +366,37 @@ export default function Dashboard() {
                 expenses={expenses}
                 onDelete={handleDeleteExpense}
               />
+            </CardContent>
+          </Card>
+        </ThreeDCard>
+      </motion.div>
+
+      {/* Currency Converter Card */}
+      <motion.div
+        initial={{ opacity: 0, x: 100, rotate: 180 }}
+        whileInView={{ opacity: 1, x: 0, rotate: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="col-span-1 sm:col-span-2 lg:col-span-1"
+      >
+        <ThreeDCard depth={15} sensitivity={3}>
+          <Card className="bg-card/50 backdrop-blur-sm p-4">
+            <CardHeader>
+              <CardTitle>Currency Converter</CardTitle>
+              <CardDescription>
+                Convert currencies – because money talks and conversions should too!
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Ready to make your money speak a new language? Click below!
+              </p>
+              <Button
+                onClick={() => router.push("/CurrencyConverter")}
+                className="mt-4 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90"
+              >
+                Go Convert!
+              </Button>
             </CardContent>
           </Card>
         </ThreeDCard>
