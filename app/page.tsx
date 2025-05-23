@@ -1,6 +1,11 @@
+// app/page.tsx
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { gsap } from "gsap";
 import {
   ArrowDown,
   ArrowUp,
@@ -9,80 +14,82 @@ import {
   Percent,
   Wallet,
 } from "lucide-react";
-import { motion } from "framer-motion";
-import { gsap } from "gsap";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+
+import { auth } from "@/lib/firebase";
+import { ThreeDCard } from "@/components/three-d-card";
 import { ExpenseChart } from "@/components/expense-chart";
 import { RecentTransactions } from "@/components/recent-transactions";
 import { CategoryBreakdown } from "@/components/category-breakdown";
-import { ThreeDCard } from "@/components/three-d-card";
 import { Footer } from "@/components/Footer";
+import { Button } from "@/components/ui/button";
 import {
-  getExpenses,
-  getUserSettings,
-  deleteExpense,
-} from "@/lib/firestore";
-import { getCurrencySymbol } from "@/lib/currency";
-import { auth } from "@/lib/firebase";
-import { sendBudgetAlertEmail } from "@/lib/mailService";
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+
+import { useDashboardStats } from "@/hooks/useDashboardStats";
 
 export default function Dashboard() {
-  const [expenses, setExpenses] = useState<any[]>([]);
-  const [userSettings, setUserSettings] = useState<any>(null);
-  const [currency, setCurrency] = useState("USD ($)");
-  const headerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [alertSent, setAlertSent] = useState(false);
+
+  // ─── Auth State ─────────────────────────────────────────────
+  const [user, setUser] = useState<User | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  // ─── Data & Actions (custom hook) ───────────────────────────
+  const {
+    expenses,
+    budget,
+    currency,
+    totalSpent,
+    budgetLeft,
+    budgetStatus,
+    transactionCount,
+    symbol,
+    handleDeleteExpense,
+  } = useDashboardStats();
+
+  // ─── UI State ───────────────────────────────────────────────
+  const headerRef = useRef<HTMLDivElement>(null);
   const [currentDateTime, setCurrentDateTime] = useState("");
-  const [alertSent50, setAlertSent50] = useState(false);
-  const [alertSent100, setAlertSent100] = useState(false);
 
-  const user = auth.currentUser;
-  const userId = user?.uid || "";
-  const userEmail = user?.email || "";
+  // ─── 1) Listen for Firebase auth once ───────────────────────
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      if (u) {
+        setUser(u);
+        setAuthChecked(true);
+      } else {
+        router.replace("/login");
+      }
+    });
+    return unsubscribe;
+  }, [router]);
 
-
+  // ─── 2) Live clock ──────────────────────────────────────────
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      const options: Intl.DateTimeFormatOptions = {
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      };
-      setCurrentDateTime(now.toLocaleString("en-US", options));
+      setCurrentDateTime(
+        now.toLocaleString("en-US", {
+          month: "long",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        })
+      );
     };
     updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
+    const id = setInterval(updateTime, 1000);
+    return () => clearInterval(id);
   }, []);
 
-  // Auth Check
-  useEffect(() => {
-    const authenticated = sessionStorage.getItem("authenticated");
-    if (authenticated === "true" && userId) {
-      setIsAuthenticated(true);
-    } else {
-      setIsAuthenticated(false);
-      setTimeout(() => {
-        router.push("/login");
-      }, 50);
-    }
-  }, [router, userId]);
-
-  // GSAP Animation for header
+  // ─── 3) GSAP header intro ───────────────────────────────────
   useEffect(() => {
     if (headerRef.current) {
       gsap.from(headerRef.current, {
@@ -94,98 +101,21 @@ export default function Dashboard() {
     }
   }, []);
 
-  // Data Fetching from Firestore
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const fetchedExpenses = await getExpenses(userId);
-        setExpenses(fetchedExpenses);
-
-        const settings = await getUserSettings(userId);
-        setUserSettings(settings);
-        if (settings.currency) {
-          setCurrency(settings.currency);
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    }
-
-    if (isAuthenticated && userId) {
-      fetchData();
-    }
-  }, [isAuthenticated, userId]);
-
-  // Delete Handler for expenses
-  const handleDeleteExpense = async (expenseId: string) => {
-    try {
-      await deleteExpense(userId, expenseId);
-      setExpenses((prev) => prev.filter((exp) => exp.id !== expenseId));
-    } catch (error) {
-      console.error("Error deleting expense:", error);
-    }
-  };
-
-
-  const totalSpent = expenses.reduce((acc, exp) => acc + (exp.amount || 0), 0);
-  const budget = userSettings?.budget || 0;
-  const budgetLeft = budget - totalSpent;
-  const transactionCount = expenses.length;
-  const budgetStatus =
-    budget > 0 ? Math.min(Math.round((totalSpent / budget) * 100), 100) : 0;
-  const symbol = getCurrencySymbol(currency);
-
-  useEffect(() => {
-    const sendAlert = async () => {
-      if (userEmail && budget > 0) {
-
-        if (budgetStatus >= 100 && !alertSent100) {
-          const message = `Hi there,
-  
-  Just a heads-up! You've exceeded your monthly budget of ${currency} ${budget}. Time to pump the brakes on those expenses!
-  
-  Stay money-smart! 💸`;
-          try {
-            await sendBudgetAlertEmail(userEmail, budget, currency, message);
-            console.log("✅ Budget alert email (100%) sent to", userEmail);
-            setAlertSent100(true);
-          } catch (err) {
-            console.error("❌ Failed to send 100% budget alert email:", err);
-          }
-        }
-
-        else if (budgetStatus >= 50 && budgetStatus < 100 && !alertSent50) {
-          const message = "🚨 Heads up! You've used 50% of your budget.";
-          try {
-            await sendBudgetAlertEmail(userEmail, budget, currency, message);
-            console.log("✅ Budget alert email (50%) sent to", userEmail);
-            setAlertSent50(true);
-          } catch (err) {
-            console.error("❌ Failed to send 50% budget alert email:", err);
-          }
-        }
-      }
-    };
-
-    sendAlert();
-  }, [budgetStatus, budget, currency, userEmail, alertSent50, alertSent100]);
-
-
-
-  // Build stats array dynamically (could be moved to a hook or API call)
+  // ─── Build stats array ──────────────────────────────────────
   const stats = [
     {
       title: "Total Spent",
       value: `${symbol}${totalSpent.toFixed(2)}`,
       description: "This month",
       icon: DollarSign,
-      change: budgetStatus > 100 ? "Over budget" : `${budgetStatus}% used`,
+      change:
+        budgetStatus > 100 ? "Over budget" : `${budgetStatus}% used`,
       changeType: totalSpent <= budget ? "increase" : "decrease",
     },
     {
       title: "Budget Left",
       value: `${symbol}${budgetLeft.toFixed(2)}`,
-      description: "Remaining from monthly budget",
+      description: "Remaining",
       icon: Wallet,
       change: budgetLeft > 0 ? "On track" : "Over budget",
       changeType: budgetLeft > 0 ? "increase" : "decrease",
@@ -195,7 +125,8 @@ export default function Dashboard() {
       value: `${transactionCount}`,
       description: "This month",
       icon: CreditCard,
-      change: transactionCount > 0 ? `+${transactionCount}` : "0",
+      change:
+        transactionCount > 0 ? `+${transactionCount}` : "0",
       changeType: "increase",
     },
     {
@@ -203,46 +134,58 @@ export default function Dashboard() {
       value: `${budgetStatus}%`,
       description: "Utilization",
       icon: Percent,
-      change: budgetStatus <= 100 ? "Within budget" : "Exceeded",
-      changeType: budgetStatus <= 100 ? "increase" : "decrease",
+      change:
+        budgetStatus <= 100 ? "Within budget" : "Exceeded",
+      changeType:
+        budgetStatus <= 100 ? "increase" : "decrease",
     },
   ];
 
-  if (isAuthenticated === null || isAuthenticated === false) return null;
+  // ─── now guard rendering ────────────────────────────────────
+  if (!authChecked) return null;
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
-      <div ref={headerRef} className="flex flex-col sm:flex-row items-center justify-between">
+      {/* Header */}
+      <div
+        ref={headerRef}
+        className="flex flex-col sm:flex-row items-center justify-between"
+      >
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight font-sf-pro gradient-text">
+          <h1 className="text-2xl sm:text-3xl font-bold gradient-text">
             Dashboard
           </h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Track your expenses and budget at a glance.
           </p>
         </div>
-        <span className="text-xs sm:text-sm text-muted-foreground mt-2 sm:mt-0">
+        <span className="text-xs text-muted-foreground">
           {currentDateTime}
         </span>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
+        {stats.map((stat, i) => (
           <motion.div
             key={stat.title}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
+            transition={{ duration: 0.3, delay: i * 0.1 }}
           >
             <ThreeDCard>
-              <Card className="border border-gray-200 dark:border-gray-700 bg-card/50 backdrop-blur-sm h-full">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+              <Card className="bg-card/50 backdrop-blur-sm h-full">
+                <CardHeader className="flex items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    {stat.title}
+                  </CardTitle>
                   <stat.icon className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-xl sm:text-2xl font-bold">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground">{stat.description}</p>
+                  <div className="text-xl font-bold">{stat.value}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stat.description}
+                  </p>
                   <div className="mt-2 flex items-center text-xs">
                     {stat.changeType === "increase" ? (
                       <ArrowUp className="mr-1 h-3 w-3 text-green-500" />
@@ -266,6 +209,7 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* Charts & Lists */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <motion.div
           className="lg:col-span-2"
@@ -274,10 +218,12 @@ export default function Dashboard() {
           transition={{ duration: 0.3, delay: 0.4 }}
         >
           <ThreeDCard depth={20} sensitivity={5}>
-            <Card className="border border-gray-200 dark:border-gray-700 bg-card/50 backdrop-blur-sm h-full">
+            <Card className="bg-card/50 backdrop-blur-sm h-full">
               <CardHeader>
                 <CardTitle>Expense Trend</CardTitle>
-                <CardDescription>Your spending over the last 30 days</CardDescription>
+                <CardDescription>
+                  Your spending over the last 30 days
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ExpenseChart expenses={expenses} />
@@ -292,36 +238,40 @@ export default function Dashboard() {
           transition={{ duration: 0.3, delay: 0.5 }}
         >
           <ThreeDCard depth={20} sensitivity={5}>
-            <Card className="border border-gray-200 dark:border-gray-700 bg-card/50 backdrop-blur-sm h-full">
+            <Card className="bg-card/50 backdrop-blur-sm h-full">
               <CardHeader>
                 <CardTitle>Budget Status</CardTitle>
-                <CardDescription>Monthly budget progress</CardDescription>
+                <CardDescription>Monthly progress</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Overall Budget</span>
-                      <span className="text-sm font-medium">
-                        {budget > 0 ? `${symbol}${budget.toFixed(2)}` : "-"}
+                    <div className="flex justify-between">
+                      <span className="text-sm">Overall Budget</span>
+                      <span className="text-sm">
+                        {budget > 0
+                          ? `${symbol}${budget.toFixed(2)}`
+                          : "-"}
                       </span>
                     </div>
                     <Progress
                       value={budget > 0 ? budgetStatus : 0}
                       className="h-2"
                       style={{
-                        background: "rgba(30, 30, 35, 0.5)",
+                        background: "rgba(30,30,35,0.5)",
                         boxShadow:
                           budgetStatus > 80
-                            ? "0 0 10px rgba(239, 68, 68, 0.7)"
-                            : "none",
+                            ? "0 0 10px rgba(239,68,68,0.7)"
+                            : undefined,
                       }}
                     />
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>{symbol}0</span>
                       <span>
                         {symbol}
-                        {budget > 0 ? budget.toFixed(2) : "-"}
+                        {budget > 0
+                          ? budget.toFixed(2)
+                          : "-"}
                       </span>
                     </div>
                   </div>
@@ -333,13 +283,14 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
+      {/* Recent Transactions */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.6 }}
       >
         <ThreeDCard depth={15} sensitivity={3}>
-          <Card className="border border-gray-200 dark:border-gray-700 bg-card/50 backdrop-blur-sm">
+          <Card className="bg-card/50 backdrop-blur-sm">
             <CardHeader>
               <CardTitle>Recent Transactions</CardTitle>
               <CardDescription>Your latest expenses</CardDescription>
@@ -354,36 +305,6 @@ export default function Dashboard() {
         </ThreeDCard>
       </motion.div>
 
-      {/* Currency Converter Card Animation */}
-      <motion.div
-        initial={{ opacity: 0, x: 100, rotate: 180 }}
-        whileInView={{ opacity: 1, x: 0, rotate: 0 }}
-        viewport={{ once: true, amount: 0.3 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="col-span-1 sm:col-span-2 lg:col-span-1"
-      >
-        <ThreeDCard depth={15} sensitivity={3}>
-          <Card className="border border-gray-200 dark:border-gray-700 bg-card/50 backdrop-blur-sm p-4">
-            <CardHeader>
-              <CardTitle>PennyFlow&apos;s Currency Converter</CardTitle>
-              <CardDescription>
-                Convert currencies – because money talks and conversions should too!
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Ready to make your money speak a new language? Click below!
-              </p>
-              <Button
-                onClick={() => router.push("/CurrencyConverter")}
-                className="mt-4 bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90"
-              >
-                Go Convert!
-              </Button>
-            </CardContent>
-          </Card>
-        </ThreeDCard>
-      </motion.div>
       <Footer />
     </div>
   );
