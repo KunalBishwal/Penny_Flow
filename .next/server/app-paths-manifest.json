@@ -1,8 +1,0 @@
-{
-  "/page": "app/page.js",
-  "/transactions/page": "app/transactions/page.js",
-  "/analytics/page": "app/analytics/page.js",
-  "/upload/page": "app/upload/page.js",
-  "/add/page": "app/add/page.js",
-  "/settings/page": "app/settings/page.js"
-}
