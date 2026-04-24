@@ -14,7 +14,6 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import { GradientNotification } from "@/components/ui/gradient-notification";
-import { extractExpenseDataFromGemini } from "@/lib/gemini";
 import { Button } from "@/components/ui/button";
 
 interface OcrResultDisplayProps {
@@ -36,8 +35,6 @@ export function OcrResultDisplay({ result }: OcrResultDisplayProps) {
   const [amount, setAmount] = useState(result.extractedInfo.amount);
   const [vendor, setVendor] = useState(result.extractedInfo.vendor);
   const [category, setCategory] = useState(result.extractedInfo.category || "Food");
-  const [loadingGemini, setLoadingGemini] = useState(false);
-  const [parsedGeminiData, setParsedGeminiData] = useState<any>(null);
   const [user, setUser] = useState<User | null>(null);
   const { toast } = useToast();
 
@@ -53,36 +50,6 @@ export function OcrResultDisplay({ result }: OcrResultDisplayProps) {
     });
     return () => unsubscribe();
   }, []);
-
-  useEffect(() => {
-    const enrichWithGemini = async () => {
-      setLoadingGemini(true);
-      try {
-        const enriched = await extractExpenseDataFromGemini(result.fullText);
-        setLoadingGemini(false);
-        if (enriched) {
-          if (enriched.amount) setAmount(enriched.amount);
-          if (enriched.vendor) setVendor(enriched.vendor);
-          if (enriched.date) {
-            const parsedDate = new Date(enriched.date);
-            setDate(isValid(parsedDate) ? parsedDate : undefined);
-          }
-          if (enriched.category) setCategory(enriched.category);
-          setParsedGeminiData(enriched);
-        }
-      } catch (error) {
-        setLoadingGemini(false);
-        console.error("Error enriching with Gemini:", error);
-        setNotification({
-          type: "error",
-          title: "AI Enrichment Failed",
-          description: "Failed to enhance OCR result with AI.",
-        });
-      }
-    };
-
-    enrichWithGemini();
-  }, [result.fullText]);
 
   const saveExpense = async () => {
     if (!user) {
@@ -139,10 +106,6 @@ export function OcrResultDisplay({ result }: OcrResultDisplayProps) {
       )}
 
       <div className="space-y-4">
-        {loadingGemini && (
-          <p className="text-sm italic text-muted-foreground">Analyzing receipt with AI...</p>
-        )}
-
         <div className="space-y-2">
           <Label htmlFor="vendor">Vendor</Label>
           <Input

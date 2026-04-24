@@ -1,5 +1,17 @@
 {
-  "node": {},
+  "node": {
+    "40feb79500a66298c811b6fc591db4c34d9ed5bd01": {
+      "workers": {
+        "app/upload/page": {
+          "moduleId": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CCoding%5C%5CFullstack%5C%5CPenny_Flow%5C%5Clib%5C%5Cgemini.ts%22%2C%5B%7B%22id%22%3A%2240feb79500a66298c811b6fc591db4c34d9ed5bd01%22%2C%22exportedName%22%3A%22extractExpenseDataFromGemini%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/upload/page": "action-browser"
+      }
+    }
+  },
   "edge": {},
   "encryptionKey": "TPIwJh+hOQVwAcmbcMa3WWDVBrA0ZDuPmM1xfcz6Sp4="
 }

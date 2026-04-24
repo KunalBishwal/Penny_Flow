@@ -1,3 +1,5 @@
+"use server";
+
 export async function extractExpenseDataFromGemini(ocrText: string) {
   // If the text contains "OTP" (case-insensitive), immediately return DENIED.
   if (/otp/i.test(ocrText)) {
